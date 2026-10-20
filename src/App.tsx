@@ -12,7 +12,7 @@ import {
   Trash2,
   ArrowLeft,
 } from "lucide-react";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { useAppUpdates } from "./useAppUpdates";
 import {
   type Data,
   type Goal,
@@ -62,18 +62,17 @@ export default function App() {
       run: () => void;
     } | null>(null),
     [toast, setToast] = useState(""),
-    [online, setOnline] = useState(navigator.onLine),
-    [swError, setSwError] = useState("");
-  const {
-    offlineReady: [offlineReady],
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegisterError: () =>
-      setSwError(
-        "Offline download failed. Reconnect and reopen the app to try again.",
-      ),
-  });
+    [online, setOnline] = useState(navigator.onLine);
+  const updates = useAppUpdates();
+  const { offlineReady, needRefresh } = updates;
+  const updateBlocked = Boolean(
+    sheet || tx || confirm || ["settings", "budget", "scenario"].includes(page),
+  );
+  function applyAppUpdate() {
+    if (updates.status === "applying") return;
+    download(JSON.stringify(data, null, 2), "savings-before-update.json");
+    void updates.applyUpdate();
+  }
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     addEventListener("online", update);
@@ -298,22 +297,23 @@ export default function App() {
         ) : null}
         {needRefresh ? (
           <div className="update-banner">
-            <span>Update available · your plan stays saved.</span>
+            <span>
+              {updateBlocked
+                ? "Update ready · finish editing before updating."
+                : "Update available · your plan stays saved."}
+            </span>
             <button
-              onClick={() => {
-                download(
-                  JSON.stringify(data, null, 2),
-                  "savings-before-update.json",
-                );
-                void updateServiceWorker(true);
-              }}
+              disabled={updateBlocked || updates.status === "applying"}
+              onClick={applyAppUpdate}
             >
               <RefreshCw size={15} />
-              Update
+              {updates.status === "applying" ? "Updating…" : "Update"}
             </button>
           </div>
         ) : null}
-        {swError ? <p className="form-error">{swError}</p> : null}
+        {updates.registrationError ? (
+          <p className="form-error">{updates.registrationError}</p>
+        ) : null}
         <main id="main" key={page}>
           {page === "home" ? (
             <Home
@@ -585,6 +585,8 @@ export default function App() {
               offlineReady={offlineReady}
               online={online}
               install={() => setSheet("install")}
+              updates={updates}
+              applyUpdate={applyAppUpdate}
             />
           ) : null}
           {page === "activity" ? (

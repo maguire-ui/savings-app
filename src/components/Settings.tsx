@@ -5,6 +5,7 @@ import {
   Smartphone,
   ShieldCheck,
   CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import {
   type Data,
@@ -16,6 +17,7 @@ import {
   money,
   mainGoal,
 } from "../model";
+import type { AppUpdates } from "../useAppUpdates";
 import { incomeSplitFromPlan, dataWithIncomeSplit } from "../income";
 import { SplitEditor } from "./SplitEditor";
 import { download, PREVIOUS } from "../storage";
@@ -34,12 +36,16 @@ export function SettingsPage({
   offlineReady,
   online,
   install,
+  updates,
+  applyUpdate,
 }: {
   data: Data;
   commit: Commit;
   offlineReady: boolean;
   online: boolean;
   install: () => void;
+  updates: AppUpdates;
+  applyUpdate: () => void;
 }) {
   const [draft, setDraft] = useState<Settings>({ ...data.settings }),
     [income, setIncome] = useState(String(data.settings.income / 100)),
@@ -96,6 +102,24 @@ export function SettingsPage({
   } catch {
     /* The form validates on save. */
   }
+  const unsaved =
+    JSON.stringify(draft) !== JSON.stringify(data.settings) ||
+    !income ||
+    previewIncome !== data.settings.income ||
+    !expenses ||
+    previewExpenses !== data.settings.expenses ||
+    (splitChanged &&
+      JSON.stringify(split) !== JSON.stringify(incomeSplitFromPlan(data)));
+  const updateBusy =
+    updates.status === "checking" || updates.status === "applying";
+  const updateLabel =
+    updates.status === "applying"
+      ? "Updating…"
+      : updates.status === "checking"
+        ? "Checking…"
+        : updates.needRefresh
+          ? "Update now"
+          : "Check for updates";
   return (
     <>
       <PageTitle title="Settings" />
@@ -277,6 +301,40 @@ export function SettingsPage({
           </Button>
         </Section>
       </form>
+      <Section title="App updates">
+        <div className="status-row">
+          <RefreshCw size={21} />
+          <div>
+            <strong>Savings {__APP_VERSION__}</strong>
+            <small role="status" aria-live="polite">
+              {updates.status === "applying"
+                ? "Opening the update…"
+                : updates.status === "checking"
+                  ? "Checking for updates…"
+                  : updates.status === "error" || updates.status === "offline"
+                    ? updates.message
+                    : updates.needRefresh
+                      ? "An update is ready. Your saved plan stays here."
+                      : updates.status === "current"
+                        ? "You’re up to date."
+                        : updates.message ||
+                          "Updates install here. Keep your Home Screen app."}
+            </small>
+          </div>
+        </div>
+        {updates.needRefresh && unsaved ? (
+          <p className="fine-print">Save your settings before updating.</p>
+        ) : null}
+        <Button
+          secondary={!updates.needRefresh}
+          disabled={updateBusy || (updates.needRefresh && unsaved)}
+          onClick={() =>
+            updates.needRefresh ? applyUpdate() : void updates.checkForUpdates()
+          }
+        >
+          {updateLabel}
+        </Button>
+      </Section>
       <Section title="On your iPhone">
         <div className="status-row">
           <Smartphone size={21} />
