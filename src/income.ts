@@ -15,6 +15,7 @@ import {
   today,
   validDate,
   MAX_CENTS,
+  withMoneyUndo,
 } from "./model";
 
 /** Shares of money left after tithing and planned expenses. */
@@ -203,5 +204,5 @@ export function recordIncome(
         : g,
     ),
   });
-  return validate(completed);
+  return validate(withMoneyUndo(data, completed));
 }

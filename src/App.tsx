@@ -23,10 +23,10 @@ import {
   money,
   mainGoal,
   shortDate,
-  voidTransaction,
   validate,
 } from "./model";
 import { load, save, download, KEY, PREVIOUS } from "./storage";
+import { UndoMoney } from "./components/UndoMoney";
 import { IncomeForm } from "./components/IncomeForm";
 import { Home, Activity } from "./components/Home";
 import { Budget } from "./components/Budget";
@@ -55,6 +55,7 @@ export default function App() {
     [editing, setEditing] = useState<Goal | undefined>(),
     [goalType, setGoalType] = useState<"main" | "side">("main"),
     [tx, setTx] = useState<Transaction | null>(null),
+    [undoTarget, setUndoTarget] = useState<string | null>(null),
     [confirm, setConfirm] = useState<{
       title: string;
       copy: string;
@@ -66,7 +67,11 @@ export default function App() {
   const updates = useAppUpdates();
   const { offlineReady, needRefresh } = updates;
   const updateBlocked = Boolean(
-    sheet || tx || confirm || ["settings", "budget", "scenario"].includes(page),
+    sheet ||
+    tx ||
+    confirm ||
+    undoTarget ||
+    ["settings", "budget", "scenario"].includes(page),
   );
   function applyAppUpdate() {
     if (updates.status === "applying") return;
@@ -682,22 +687,7 @@ export default function App() {
             <Button
               secondary
               onClick={() => {
-                setConfirm({
-                  title: "Undo this record?",
-                  copy: "This reverses its effect on your goal balances and keeps the original activity visible as undone. It does not change your scheduled next payday.",
-                  action: "Undo record",
-                  run: () => {
-                    try {
-                      const next = voidTransaction(data, tx.id);
-                      if (commit(next, "Record undone")) {
-                        setConfirm(null);
-                        setTx(null);
-                      }
-                    } catch (e) {
-                      setToast((e as Error).message);
-                    }
-                  },
-                });
+                setUndoTarget(tx.id);
                 setTx(null);
               }}
             >
@@ -705,6 +695,14 @@ export default function App() {
             </Button>
           ) : null}
         </Modal>
+      ) : null}
+      {undoTarget ? (
+        <UndoMoney
+          data={data}
+          transactionId={undoTarget}
+          commit={commit}
+          onClose={() => setUndoTarget(null)}
+        />
       ) : null}
       {confirm ? (
         <Confirm

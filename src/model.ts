@@ -35,6 +35,21 @@ export interface Entry {
   goalId: string;
   amount: number;
 }
+type UndoSettings = Pick<
+  Settings,
+  | "nextPayday"
+  | "savings"
+  | "mode"
+  | "frequency"
+  | "firstDay"
+  | "secondDay"
+  | "monthlyDay"
+>;
+type UndoGoal = Pick<Goal, "status" | "allocation">;
+export interface MoneyUndo {
+  settings?: { before: UndoSettings; after: UndoSettings };
+  goals: { id: string; before: UndoGoal; after: UndoGoal }[];
+}
 export interface Transaction {
   id: string;
   date: string;
@@ -48,6 +63,7 @@ export interface Transaction {
   giving?: number;
   expenses?: number;
   spending?: number;
+  undo?: MoneyUndo;
 }
 export interface Data {
   version: 1;
@@ -285,6 +301,50 @@ export function forecasts(
   }
   return out;
 }
+export function withMoneyUndo(before: Data, after: Data): Data {
+  const t = after.transactions.at(-1);
+  if (!t || before.transactions.some((old) => old.id === t.id)) return after;
+  const settings = (s: Settings): UndoSettings => ({
+    nextPayday: s.nextPayday,
+    savings: s.savings,
+    mode: s.mode,
+    frequency: s.frequency,
+    firstDay: s.firstDay,
+    secondDay: s.secondDay,
+    monthlyDay: s.monthlyDay,
+  });
+  const a = settings(before.settings),
+    b = settings(after.settings);
+  const goals: MoneyUndo["goals"] = [];
+  for (const g of before.goals) {
+    const next = after.goals.find((next) => next.id === g.id);
+    if (
+      next &&
+      (g.status !== next.status || g.allocation !== next.allocation)
+    ) {
+      goals.push({
+        id: g.id,
+        before: { status: g.status, allocation: g.allocation },
+        after: { status: next.status, allocation: next.allocation },
+      });
+    }
+  }
+  const undo: MoneyUndo = {
+    goals,
+    ...(JSON.stringify(a) !== JSON.stringify(b)
+      ? { settings: { before: a, after: b } }
+      : {}),
+  };
+  // Replacing an intermediate payday checkpoint ensures income undo uses the original plan.
+  const { undo: _intermediate, ...record } = t;
+  return {
+    ...after,
+    transactions: [
+      ...after.transactions.slice(0, -1),
+      { ...record, ...(goals.length || undo.settings ? { undo } : {}) },
+    ],
+  };
+}
 export function transaction(
   d: Data,
   goalId: string,
@@ -321,7 +381,7 @@ export function transaction(
       },
     ],
   };
-  return completeQuests(next);
+  return withMoneyUndo(d, completeQuests(next));
 }
 export function completeQuests(d: Data): Data {
   const b = balances(d);
@@ -372,20 +432,79 @@ export function recordPayday(
       },
     ],
   };
-  return completeQuests(next);
+  return withMoneyUndo(d, completeQuests(next));
 }
 export function voidTransaction(d: Data, tid: string): Data {
-  const next = {
+  const t = d.transactions.find((t) => t.id === tid);
+  if (!t || t.voided)
+    throw Error(
+      "This money entry has already been undone or is no longer available.",
+    );
+  let next: Data = {
     ...d,
     transactions: d.transactions.map((t) =>
       t.id === tid ? { ...t, voided: true } : t,
     ),
   };
-  if (Object.values(balances(next)).some((n) => n < 0))
+  const previousBalances = balances(d),
+    nextBalances = balances(next);
+  if (Object.values(nextBalances).some((n) => n < 0))
     throw Error(
       "Undo later withdrawals first; this would make a balance negative.",
     );
-  return next;
+  if (t.undo?.settings) {
+    const { before, after } = t.undo.settings;
+    const settings = { ...next.settings };
+    if (settings.savings === after.savings) settings.savings = before.savings;
+    if (settings.mode === after.mode) settings.mode = before.mode;
+    const scheduleMatches = (
+      [
+        "frequency",
+        "firstDay",
+        "secondDay",
+        "monthlyDay",
+        "nextPayday",
+      ] as const
+    ).every((key) => settings[key] === after[key]);
+    if (scheduleMatches) settings.nextPayday = before.nextPayday;
+    next = { ...next, settings };
+  }
+  const affected = new Set(t.entries.map((e) => e.goalId));
+  next = {
+    ...next,
+    goals: next.goals.map((g) => {
+      if (g.deleted || g.status === "archived") return g;
+      const change = t.undo?.goals.find((c) => c.id === g.id);
+      if (change) {
+        const stillComplete =
+          change.after.status === "completed" &&
+          change.before.status !== "completed" &&
+          nextBalances[g.id] >= g.target;
+        return {
+          ...g,
+          allocation:
+            g.allocation === change.after.allocation
+              ? change.before.allocation
+              : g.allocation,
+          status:
+            g.status === change.after.status && !stillComplete
+              ? change.before.status
+              : g.status,
+        };
+      }
+      // Older records have no checkpoint. Reopen only a completion threshold this undo actually crosses.
+      if (
+        g.type === "side" &&
+        affected.has(g.id) &&
+        g.status === "completed" &&
+        previousBalances[g.id] >= g.target &&
+        nextBalances[g.id] < g.target
+      )
+        return { ...g, status: "active" };
+      return g;
+    }),
+  };
+  return validate(next);
 }
 export function validate(value: unknown): Data {
   const d = value as Data;
@@ -553,6 +672,48 @@ export function validate(value: unknown): Data {
         ))
     )
       throw Error("The backup contains an inconsistent transaction.");
+    if (t.undo !== undefined) {
+      const u = t.undo;
+      const validGoal = (v: UndoGoal) =>
+        v &&
+        ["active", "wishlist", "paused", "completed", "archived"].includes(
+          v.status,
+        ) &&
+        finite(v.allocation, 0, 100);
+      const validSettings = (v: UndoSettings) =>
+        v &&
+        typeof v.nextPayday === "string" &&
+        (!v.nextPayday || validDate(v.nextPayday)) &&
+        finite(v.savings, 0, 100) &&
+        ["focus", "balanced"].includes(v.mode) &&
+        ["weekly", "biweekly", "semimonthly", "monthly"].includes(
+          v.frequency,
+        ) &&
+        Number.isInteger(v.firstDay) &&
+        v.firstDay >= 1 &&
+        v.firstDay <= 27 &&
+        Number.isInteger(v.secondDay) &&
+        v.secondDay > v.firstDay &&
+        v.secondDay <= 31 &&
+        Number.isInteger(v.monthlyDay) &&
+        v.monthlyDay >= 1 &&
+        v.monthlyDay <= 31;
+      if (
+        !u ||
+        !Array.isArray(u.goals) ||
+        u.goals.length > 500 ||
+        new Set(u.goals.map((g) => g?.id)).size !== u.goals.length ||
+        u.goals.some(
+          (g) =>
+            !g || !ids.has(g.id) || !validGoal(g.before) || !validGoal(g.after),
+        ) ||
+        (u.settings !== undefined &&
+          (!u.settings ||
+            !validSettings(u.settings.before) ||
+            !validSettings(u.settings.after)))
+      )
+        throw Error("The backup contains invalid undo information.");
+    }
     tids.add(t.id);
   }
   if (Object.values(balances(d)).some((n) => !integer(n)))
