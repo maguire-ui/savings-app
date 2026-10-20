@@ -82,21 +82,6 @@ export function Budget({
         title={scenarioOnly ? "What if I saved more?" : "Your budget"}
         subtitle="A plan for each paycheque."
       />
-      {!scenarioOnly ? (
-        <Section title="Choose a starting point">
-          <div className="preset-row">
-            <button onClick={() => preset("save")}>Save First</button>
-            <button onClick={() => preset("50")}>50 / 30 / 20</button>
-            <button onClick={() => preset("70")}>70 / 20 / 10</button>
-          </div>
-          <p className="fine-print">
-            These are editable starting points. 50/30/20 splits money after
-            giving into expenses, spending, and savings. 70/20/10 uses 10%
-            giving, approximately 20% savings, and the rest spending. Your
-            current plan is always customizable.
-          </p>
-        </Section>
-      ) : null}
       <div className="budget-total">
         {money(p.income, currency, true)}
         <span> / paycheque</span>
@@ -216,6 +201,22 @@ export function Budget({
           One savings pool. Completed and paused Side Quests return their future
           share to your main goal.
         </p>
+        {!scenarioOnly ? (
+          <details className="preset-options">
+            <summary>Budget starting points</summary>
+            <div className="preset-row">
+              <button onClick={() => preset("save")}>Save First</button>
+              <button onClick={() => preset("50")}>50 / 30 / 20</button>
+              <button onClick={() => preset("70")}>70 / 20 / 10</button>
+            </div>
+            <p className="fine-print">
+              These are editable starting points. 50/30/20 splits money after
+              giving into expenses, spending, and savings. 70/20/10 uses 10%
+              giving, approximately 20% savings, and the rest spending. Your
+              current plan is always customizable.
+            </p>
+          </details>
+        ) : null}
       </Section>
       <Section title="Projection preview">
         {main ? (
