@@ -207,7 +207,10 @@ export function IncomeForm({
                 </span>
                 <span className="income-destination-name">
                   <strong>{main.name}</strong>
-                  <small>{percent(split.main)} · main goal</small>
+                  <small>
+                    {percent(split.main)} of{" "}
+                    {money(deduction.available, currency)} · main goal
+                  </small>
                 </span>
                 <strong className="income-destination-amount">
                   {plan ? money(actual(main.id), currency) : "—"}
@@ -223,7 +226,10 @@ export function IncomeForm({
                   </span>
                   <span className="income-destination-name">
                     <strong>{g.name}</strong>
-                    <small>{percent(split.quests[g.id])} · Side Quest</small>
+                    <small>
+                      {percent(split.quests[g.id])} of{" "}
+                      {money(deduction.available, currency)} · Side Quest
+                    </small>
                   </span>
                   <strong className="income-destination-amount">
                     {plan ? money(actual(g.id), currency) : "—"}
@@ -236,7 +242,10 @@ export function IncomeForm({
               </span>
               <span className="income-destination-name">
                 <strong>Fun money</strong>
-                <small>{percent(split.fun)} · spending</small>
+                <small>
+                  {percent(split.fun)} of {money(deduction.available, currency)}{" "}
+                  · spending
+                </small>
               </span>
               <strong className="income-destination-amount">
                 {plan ? money(plan.fun, currency) : "—"}

@@ -21,14 +21,7 @@ import type { AppUpdates } from "../useAppUpdates";
 import { incomeSplitFromPlan, dataWithIncomeSplit } from "../income";
 import { SplitEditor } from "./SplitEditor";
 import { download, PREVIOUS } from "../storage";
-import {
-  PageTitle,
-  Section,
-  Field,
-  AmountInput,
-  PercentInput,
-  Button,
-} from "./UI";
+import { PageTitle, Section, Field, AmountInput, Button } from "./UI";
 import { type Commit, FormError, Confirm } from "./Forms";
 export function SettingsPage({
   data,
@@ -125,7 +118,10 @@ export function SettingsPage({
       <PageTitle title="Settings" />
       <form onSubmit={submit}>
         <Section title="Income & paydays">
-          <Field label="Expected paycheque">
+          <Field
+            label="Expected paycheque"
+            hint="Amount for one payday. Set the frequency below to match when you are paid."
+          >
             <AmountInput
               value={income}
               onChange={setIncome}
@@ -219,48 +215,25 @@ export function SettingsPage({
           </p>
         </Section>
         <Section title="Your income split">
-          <div className="form-grid">
-            <Field
-              label="Tithing (% of income)"
-              hint="Taken from your full paycheque first."
-            >
-              <PercentInput
-                label="Tithing percentage"
-                value={draft.giving}
-                onChange={(value) => update("giving", value)}
-              />
-            </Field>
-            <Field label="Expenses per payday">
-              <AmountInput
-                label="Planned expenses"
-                value={expenses}
-                onChange={setExpenses}
-              />
-            </Field>
-          </div>
-          {mainGoal(data) ? (
-            <SplitEditor
-              data={{
-                ...data,
-                settings: {
-                  ...draft,
-                  income: previewIncome,
-                  expenses: previewExpenses,
-                },
-              }}
-              split={split}
-              onChange={(value) => {
-                setSplit(value);
-                setSplitChanged(true);
-                setError("");
-              }}
-            />
-          ) : (
-            <p className="fine-print">
-              Create your main goal on Home to set where your savings go. Income
-              and other settings can still be saved now.
-            </p>
-          )}
+          <SplitEditor
+            data={{
+              ...data,
+              settings: {
+                ...draft,
+                income: previewIncome,
+                expenses: previewExpenses,
+              },
+            }}
+            split={split}
+            onChange={(value) => {
+              setSplit(value);
+              setSplitChanged(true);
+              setError("");
+            }}
+            onTithingChange={(value) => update("giving", value)}
+            expenses={expenses}
+            onExpensesChange={setExpenses}
+          />
           <p className="fine-print">
             Applies to future income. Existing balances stay the same.
           </p>

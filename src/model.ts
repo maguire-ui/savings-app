@@ -101,6 +101,12 @@ export function emptyData(): Data {
     transactions: [],
   };
 }
+// Snap only machine-precision noise at half-cent boundaries before rounding.
+function roundCents(n: number) {
+  const half = Math.round(n * 2) / 2;
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(n)) * 2;
+  return Math.round(Math.abs(n - half) <= tolerance ? half : n);
+}
 export function cents(value: string | number) {
   const n = Number(value);
   if (
@@ -110,7 +116,7 @@ export function cents(value: string | number) {
     n > MAX_CENTS / 100
   )
     throw Error("Enter a valid amount between $0 and $999,999,999.99.");
-  return Math.round((n + Number.EPSILON) * 100);
+  return roundCents(n * 100);
 }
 export function money(n: number, currency = "CAD", compact = false) {
   if (!Number.isFinite(n)) return "—";
@@ -143,11 +149,11 @@ export function mainGoal(d: Data) {
   );
 }
 export function budget(s: Settings, income = s.income) {
-  const giving = Math.round((income * s.giving) / 100);
+  const giving = roundCents((income * s.giving) / 100);
   const afterGiving = income - giving;
   const expenses = s.expenses;
   const available = Math.max(0, afterGiving - expenses);
-  const savings = Math.round((available * s.savings) / 100);
+  const savings = roundCents((available * s.savings) / 100);
   return {
     income,
     giving,

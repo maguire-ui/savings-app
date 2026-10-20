@@ -1675,3 +1675,37 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: -0.8px;
   overflow-wrap: anywhere;
 }
+
+.split-income-base {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.split-income-base strong {
+  color: var(--text);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.split-expense-control input {
+  width: 100%;
+  text-align: right;
+  padding: 10px 8px;
+}
+.split-preview-base {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.split-editor-name .split-row-basis {
+  color: var(--accent);
+  line-height: 1.4;
+}
+.split-accounted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 18px 0 0;
+}
