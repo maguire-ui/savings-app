@@ -1358,3 +1358,196 @@ input[type="range"]::-moz-range-thumb {
 .preset-options .preset-row {
   padding-top: 8px;
 }
+.income-intro {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+.income-back {
+  min-height: 34px;
+  margin: -14px 0 8px;
+  font-size: 12px;
+}
+.income-total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.income-total > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.income-total > strong {
+  font-size: 39px;
+  line-height: 1.15;
+  letter-spacing: -1.4px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.income-deductions {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 0;
+}
+.income-deductions > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.income-deductions small {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 5px;
+}
+.income-deductions strong {
+  font-variant-numeric: tabular-nums;
+}
+.income-split-heading {
+  margin: 18px 0 8px;
+}
+.income-split-heading h3 {
+  font-size: 18px;
+}
+.income-split-heading > span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.income-destination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.income-destination + .income-destination {
+  border-top: 1px solid var(--line);
+}
+.income-destination-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--soft);
+}
+.income-destination-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.income-destination-name strong {
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.income-destination-name small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.income-destination-amount {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  max-width: 48%;
+  overflow-wrap: anywhere;
+}
+.income-base {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0 12px;
+  line-height: 1.6;
+}
+.income-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--accent);
+  text-align: left;
+}
+.income-preset span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.income-custom {
+  border-bottom: 1px solid var(--line);
+  margin: 8px 0 10px;
+}
+.income-custom summary {
+  padding: 12px 0;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.income-share-list .field {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin: 10px 0;
+}
+.income-share-list .field > span {
+  font-size: 12px;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.income-share-list input {
+  width: 85px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 9px 0;
+  margin: 5px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.check-row input {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  accent-color: var(--accent);
+  min-height: 20px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 1px 0 0;
+}
+.check-row > span {
+  flex: 1;
+}
+.check-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.manual-savings-link {
+  margin-right: 24px;
+  font-size: 11px;
+}
+.paycheck-plan-note {
+  margin-bottom: 0;
+}

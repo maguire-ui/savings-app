@@ -22,7 +22,9 @@ Safari and a Home Screen installation can have separate storage. Set up the Home
 - Tithing first, optional expenses, then a customizable savings/spending split. Defaults are editable suggestions; income, goals, and activity start empty.
 - Focus or Balanced funding. Side Quests share the savings pool; completed quests return future funding to the main goal. Purchases debit only the selected goal.
 - Explicit Apply for budget and what-if previews. Projections simulate goal completion and future reallocation without recording transactions.
-- Manual savings, withdrawals, purchases, recorded paydays, undo with negative-balance protection, goal editing, archiving, and deletion.
+- Record actual income: enter earnings, review tithing and the dollar split between your main goal, individual Side Quests, and fun money, then confirm. Nothing is added automatically on a payday.
+- Adjustable income percentages with a 50/30/20 shortcut, one-time preview by default, and an explicit option to remember the split. Expected income and paydays remain planning forecasts.
+- Manual savings adjustments, withdrawals, purchases, undo with negative-balance protection, goal editing, archiving, and deletion.
 - Fast-food spending estimates and redirection scenarios that never become recorded expenses automatically.
 - Light/dark/system appearance, reduced-motion support, safe-area-aware navigation, editable text fields, and interface text selection/double-tap zoom suppression. Pinch accessibility zoom remains available.
 - Local storage, JSON backup/restore, previous-save recovery, corrupt-data recovery, startup fallback, and explicit app updates.
@@ -32,6 +34,8 @@ Safari and a Home Screen installation can have separate storage. Set up the Home
 This is a **tracking and planning app**. It does not move money, connect to a bank, or verify balances. No financial data is uploaded by the app; the host receives ordinary requests for its static files. There is no cloud sync, login, or bank connection. Different devices have separate plans.
 
 Money is stored in integer cents. Balances are derived from immutable activity entries with soft undo. Tithing is a percentage of the paycheque; expenses are deducted next; savings are a percentage of the remainder. Side Quest percentages refer to the resulting savings pool, not gross pay. A completed quest's excess contribution for a payday goes to the main goal, preserving every cent. Fractional Side Quest cents round down and the main goal receives the remainder.
+
+In **Record income**, destination percentages apply to the money left after tithing and expenses. With $200 earned, 10% tithing, no expenses, and a 50/30/20 split, the receipt is $20 tithing, $90 main goal, $54 Side Quests, and $36 fun. Each Side Quest shows its own amount; completed-goal overflow returns to the main goal. Fun money and tithing are receipt allocations, not separate account balances. Confirmation records goal contributions; it does not move money. Marking an earning as the scheduled payday is optional and advances the schedule only after confirmation.
 
 Forecasts start on the first scheduled payday on or after today and do not assume missed paydays were recorded. The Nth contribution lands on the Nth scheduled payday. Forecasts assume the planned income and allocations continue, with no interest or investment growth, and have a 50-year limit. Annual averages use 52/26/24/12 paycheques; actual date forecasts follow the calendar. A particular biweekly year may include 27 paydays.
 
@@ -50,10 +54,11 @@ npm run preview
 Node.js 22.12 or newer is recommended. React + TypeScript + Vite. `vite-plugin-pwa` generates a self-contained service worker with local fonts/icons/assets; no runtime CDN or backend is required.
 
 - `src/model.ts`: financial ledger, validation, schedules, allocations, and forecasts.
+- `src/income.ts`: actual-income allocation previews and confirmed income receipts.
 - `src/storage.ts`: versioned local persistence, stale-tab checks, previous-save backup, and export.
 - `src/components/`: UI primitives, forms, Home, Budget, and Settings.
 - `src/App.tsx`: screen and sheet composition.
-- `tests/model.test.ts`: independent financial and calendar acceptance cases.
+- `tests/model.test.ts` and `tests/income.test.ts`: independent financial, calendar, and manual-income acceptance cases.
 
 ## Publish updates
 
@@ -63,4 +68,4 @@ No real user balances, transactions, credentials, or backup files belong in this
 
 ## Verification
 
-On October 20, 2026: the production build and 16 calendar/financial tests passed. Isolated Chromium and WebKit browser checks passed creation, income/date persistence, shared funding, preview/Apply isolation, add/remove records, refresh persistence, backup/restore, cold reload and saves with the server unreachable, corrupt-data recovery, text-selection CSS, and responsive widths from 320 to 1280 pixels. No JavaScript page errors were recorded. Test screenshots use synthetic example data, never seeded into the app. Physical iPhone installation, airplane mode, double-tap/long-press gestures, and long-term storage retention still need device acceptance.
+On October 20, 2026: the production build and 28 calendar/financial tests passed. Isolated Chromium and WebKit browser checks passed creation, income/date persistence, shared funding, preview/Apply isolation, add/remove records, refresh persistence, backup/restore, cold reload and saves with the server unreachable, corrupt-data recovery, text-selection CSS, and responsive widths from 320 to 1280 pixels. The manual-income flow additionally passed exact dollar splits, preview/cancel isolation, invalid-total protection, duplicate-click protection, optional remembered settings, receipt details/undo, legacy backup compatibility, and recording/reopening income offline. No JavaScript page errors were recorded. Test screenshots use synthetic example data, never seeded into the app. Physical iPhone installation, airplane mode, double-tap/long-press gestures, and long-term storage retention still need device acceptance.

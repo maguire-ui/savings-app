@@ -43,7 +43,7 @@ export interface Transaction {
   id: string;
   date: string;
   createdAt: string;
-  kind: "deposit" | "withdrawal" | "purchase" | "payday" | "opening";
+  kind: "deposit" | "withdrawal" | "purchase" | "payday" | "opening" | "income";
   note: string;
   entries: Entry[];
   voided?: boolean;
@@ -502,9 +502,14 @@ export function validate(value: unknown): Data {
       !Number.isFinite(Date.parse(t.createdAt)) ||
       typeof t.note !== "string" ||
       t.note.length > 200 ||
-      !["deposit", "withdrawal", "purchase", "payday", "opening"].includes(
-        t.kind,
-      ) ||
+      ![
+        "deposit",
+        "withdrawal",
+        "purchase",
+        "payday",
+        "opening",
+        "income",
+      ].includes(t.kind) ||
       !Array.isArray(t.entries) ||
       t.entries.some(
         (e) =>
@@ -515,13 +520,13 @@ export function validate(value: unknown): Data {
     )
       throw Error("The backup contains an invalid transaction.");
     if (
-      t.kind === "payday" &&
-      (!validDate(t.payday || "") ||
+      (t.kind === "payday" || t.kind === "income") &&
+      ((t.kind === "payday" && !validDate(t.payday || "")) ||
         ![t.gross, t.giving, t.expenses, t.spending].every(integer))
     )
       throw Error("The backup contains an invalid payday.");
     if (
-      t.kind === "payday" &&
+      (t.kind === "payday" || t.kind === "income") &&
       (t.giving! +
         t.expenses! +
         t.spending! +
@@ -532,6 +537,7 @@ export function validate(value: unknown): Data {
       throw Error("The backup contains an unbalanced payday.");
     if (
       t.kind !== "payday" &&
+      t.kind !== "income" &&
       (t.entries.length !== 1 ||
         t.entries.some(
           (e) =>

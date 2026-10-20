@@ -120,7 +120,7 @@ export function SettingsPage({
           ) : null}
           <Field
             label="Next payday"
-            hint="Forecasts use upcoming dates. Recording a payday moves this forward; missed paydays are never recorded automatically."
+            hint="Planning dates never add money. In Record income, mark an earning as your scheduled payday to advance this date."
           >
             <input
               type="date"

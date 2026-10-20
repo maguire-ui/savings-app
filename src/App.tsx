@@ -27,6 +27,7 @@ import {
   validate,
 } from "./model";
 import { load, save, download, KEY, PREVIOUS } from "./storage";
+import { IncomeForm } from "./components/IncomeForm";
 import { Home, Activity } from "./components/Home";
 import { Budget } from "./components/Budget";
 import { SettingsPage } from "./components/Settings";
@@ -41,12 +42,7 @@ import {
   AddLabel,
   Modal,
 } from "./components/UI";
-import {
-  GoalForm,
-  TransactionForm,
-  PaydayForm,
-  Confirm,
-} from "./components/Forms";
+import { GoalForm, TransactionForm, Confirm } from "./components/Forms";
 const loaded = load();
 export default function App() {
   const [data, setData] = useState<Data>(loaded.data),
@@ -54,7 +50,7 @@ export default function App() {
     [page, setPage] = useState("home"),
     [selected, setSelected] = useState<string | null>(null),
     [sheet, setSheet] = useState<
-      "goal" | "transaction" | "payday" | "install" | null
+      "goal" | "transaction" | "income" | "install" | null
     >(null),
     [editing, setEditing] = useState<Goal | undefined>(),
     [goalType, setGoalType] = useState<"main" | "side">("main"),
@@ -328,7 +324,7 @@ export default function App() {
                 setSelected(main?.id || null);
                 setSheet("transaction");
               }}
-              payday={() => setSheet("payday")}
+              income={() => setSheet("income")}
               navigate={navigate}
               activity={setTx}
             />
@@ -616,8 +612,8 @@ export default function App() {
           commit={commit}
         />
       ) : null}
-      {sheet === "payday" ? (
-        <PaydayForm
+      {sheet === "income" ? (
+        <IncomeForm
           data={data}
           commit={commit}
           onClose={() => setSheet(null)}
@@ -664,12 +660,11 @@ export default function App() {
               </div>
             ))}
           </div>
-          {tx.kind === "payday" ? (
+          {tx.kind === "payday" || tx.kind === "income" ? (
             <p className="fine-print">
-              Paycheque: {money(tx.gross || 0, data.settings.currency)} ·
-              Tithing: {money(tx.giving || 0, data.settings.currency)} ·
-              Expenses: {money(tx.expenses || 0, data.settings.currency)} ·
-              Available spending:{" "}
+              Income: {money(tx.gross || 0, data.settings.currency)} · Tithing:{" "}
+              {money(tx.giving || 0, data.settings.currency)} · Expenses:{" "}
+              {money(tx.expenses || 0, data.settings.currency)} · Fun money:{" "}
               {money(tx.spending || 0, data.settings.currency)}
             </p>
           ) : null}

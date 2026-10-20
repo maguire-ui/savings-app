@@ -16,7 +16,6 @@ import {
   money,
   shortDate,
   paydays,
-  today,
 } from "../model";
 import {
   Ring,
@@ -75,6 +74,7 @@ export function Activity({
                     purchase: "Purchase",
                     opening: "Starting balance",
                     payday: "Payday savings",
+                    income: "Income recorded",
                   }[t.kind]}
                 {t.voided ? " · Undone" : ""}
               </strong>
@@ -101,7 +101,7 @@ export function Home({
   openGoal,
   newMain,
   add,
-  payday,
+  income,
   navigate,
   activity,
 }: {
@@ -109,7 +109,7 @@ export function Home({
   openGoal: (g: Goal) => void;
   newMain: () => void;
   add: () => void;
-  payday: () => void;
+  income: () => void;
   navigate: (s: string) => void;
   activity: (t: Transaction) => void;
 }) {
@@ -155,9 +155,12 @@ export function Home({
                 forecast={fc[main.id]}
                 currency={data.settings.currency}
               />
-              <Button onClick={add}>
-                <AddLabel>Add savings</AddLabel>
+              <Button onClick={income}>
+                <AddLabel>Record income</AddLabel>
               </Button>
+              <button className="text-link manual-savings-link" onClick={add}>
+                Add savings
+              </button>
               <button
                 className="text-link goal-detail-link"
                 onClick={() => openGoal(main)}
@@ -177,7 +180,7 @@ export function Home({
         </div>
         <div className="support-column">
           <Section
-            title="Next paycheque"
+            title="Next expected paycheque"
             action={
               <button
                 className="text-link"
@@ -208,21 +211,9 @@ export function Home({
                     </div>
                   ))}
                 </div>
-                {data.settings.nextPayday && main ? (
-                  <button className="payday-link" onClick={payday}>
-                    {data.settings.nextPayday <= today()
-                      ? "Record payday savings"
-                      : "View payday plan"}
-                    <ChevronRight size={16} />
-                  </button>
-                ) : (
-                  <button
-                    className="text-link spaced"
-                    onClick={() => navigate("settings")}
-                  >
-                    Set your next payday
-                  </button>
-                )}
+                <p className="fine-print paycheck-plan-note">
+                  Planning only. Enter what you earn to add money to your goals.
+                </p>
               </>
             ) : (
               <div className="setup-prompt">

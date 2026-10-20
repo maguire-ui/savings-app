@@ -10,8 +10,6 @@ import {
   today,
   balances,
   mainGoal,
-  recordPayday,
-  budget,
   money,
   validate,
   completeQuests,
@@ -332,8 +330,8 @@ export function TransactionForm({
           />
         </Field>
         <p className="fine-print">
-          This records your money. It does not transfer funds or make a
-          purchase.
+          Use this for savings not already recorded through income. It does not
+          transfer funds or make a purchase.
         </p>
         <FormError error={error} />
         <Button type="submit">
@@ -342,77 +340,6 @@ export function TransactionForm({
             : kind === "purchase"
               ? "Record purchase"
               : "Remove savings"}
-        </Button>
-      </form>
-    </Modal>
-  );
-}
-export function PaydayForm({
-  data,
-  commit,
-  onClose,
-}: {
-  data: Data;
-  commit: Commit;
-  onClose: () => void;
-}) {
-  const [gross, setGross] = useState(String(data.settings.income / 100)),
-    [error, setError] = useState("");
-  let actual = 0;
-  try {
-    actual = cents(gross);
-  } catch {}
-  const plan = budget(data.settings, actual);
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    try {
-      if (
-        commit(
-          recordPayday(data, data.settings.nextPayday, cents(gross)),
-          "Payday savings recorded",
-        )
-      )
-        onClose();
-      else
-        setError(
-          "Could not save. Check device storage or reload if another tab changed this plan.",
-        );
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-  return (
-    <Modal title="Record this payday" onClose={onClose}>
-      <form onSubmit={submit}>
-        <Field label={`Actual paycheque (${data.settings.currency})`}>
-          <AmountInput value={gross} onChange={setGross} min="0.01" />
-        </Field>
-        <div className="detail-list">
-          <div>
-            <span>Tithing</span>
-            <strong>{money(plan.giving, data.settings.currency)}</strong>
-          </div>
-          <div>
-            <span>Expenses</span>
-            <strong>{money(plan.expenses, data.settings.currency)}</strong>
-          </div>
-          <div>
-            <span>To savings</span>
-            <strong>{money(plan.savings, data.settings.currency)}</strong>
-          </div>
-          <div>
-            <span>Available to spend</span>
-            <strong>{money(plan.spending, data.settings.currency)}</strong>
-          </div>
-        </div>
-        <p className="fine-print">
-          Only savings contributions are added to your goal balances. Tithing,
-          expenses, and spending are a plan, not logged payments. Your next
-          payday moves forward.
-        </p>
-        <FormError error={error} />
-        <Button type="submit" disabled={!plan.valid}>
-          Record payday savings
         </Button>
       </form>
     </Modal>
