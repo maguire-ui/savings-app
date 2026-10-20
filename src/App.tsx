@@ -298,7 +298,7 @@ export default function App() {
         ) : null}
         {needRefresh ? (
           <div className="update-banner">
-            <span>A new version is ready. Your data stays saved.</span>
+            <span>Update available · your plan stays saved.</span>
             <button
               onClick={() => {
                 download(
@@ -333,7 +333,6 @@ export default function App() {
             <>
               <PageTitle
                 title="Side Quests"
-                subtitle="Make room for the little things."
                 action={
                   <button
                     className="icon-button"
@@ -404,15 +403,14 @@ export default function App() {
                 </>
               ) : (
                 <Empty
-                  title="Little goals, big enjoyment"
+                  title="Your first Side Quest"
                   action={
                     <Button onClick={() => newGoal("side")}>
                       Add a Side Quest
                     </Button>
                   }
                 >
-                  A game, a getaway, a thoughtful gift. Start a wishlist or fund
-                  something now.
+                  Save for something smaller, or add it to your wishlist.
                 </Empty>
               )}
               {data.goals.some((g) => g.status === "archived" && !g.deleted) ? (
@@ -491,7 +489,9 @@ export default function App() {
               ) : null}
               {goal.status !== "archived" ? (
                 <Button onClick={() => setSheet("transaction")}>
-                  Record savings or purchase
+                  {goal.type === "main"
+                    ? "Add or remove savings"
+                    : "Record savings or purchase"}
                 </Button>
               ) : (
                 <Button
@@ -529,6 +529,11 @@ export default function App() {
                 >
                   What if I saved more?
                 </button>
+              ) : null}
+              {fc[goal.id]?.date ? (
+                <p className="fine-print">
+                  Estimates assume your planned contributions each payday.
+                </p>
               ) : null}
               <Section title="Contribution history">
                 <Activity

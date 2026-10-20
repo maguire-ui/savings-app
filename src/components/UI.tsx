@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   X,
   ArrowLeft,
@@ -11,14 +17,7 @@ import {
   ShoppingBag,
   Headphones,
 } from "lucide-react";
-import {
-  money,
-  percent,
-  shortDate,
-  type Forecast,
-  type Settings,
-  type Goal,
-} from "../model";
+import { money, percent, shortDate, type Forecast, type Goal } from "../model";
 export const icons = {
   target: Target,
   game: Gamepad2,
@@ -132,6 +131,8 @@ export function Ring({
   currency: string;
 }) {
   const pct = Math.min(100, Math.max(0, target ? (saved * 100) / target : 0));
+  const amount = money(saved, currency, true);
+  const goalAmount = `of ${money(target, currency, true)}`;
   return (
     <div
       className="ring"
@@ -151,11 +152,18 @@ export function Ring({
       </svg>
       <div className="ring-content">
         <strong
-          className={saved >= 100000000 ? "ring-amount small" : "ring-amount"}
+          className="ring-amount"
+          style={{ "--amount-width": amount.length * 0.62 } as CSSProperties}
         >
-          {money(saved, currency, true)}
+          {amount}
         </strong>
-        <span>of {money(target, currency, true)}</span>
+        <span
+          style={
+            { "--amount-width": goalAmount.length * 0.58 } as CSSProperties
+          }
+        >
+          {goalAmount}
+        </span>
         <b>{Math.floor(pct)}% saved</b>
       </div>
     </div>
@@ -170,11 +178,14 @@ export function ForecastRow({
   forecast?: Forecast;
   currency: string;
 }) {
+  const leftAmount = money(left, currency, true);
   return (
     <>
-      <div className="forecast-row">
+      <div
+        className={`forecast-row${leftAmount.length > 9 ? " forecast-wide" : ""}`}
+      >
         <div>
-          <strong>{money(left, currency, true)}</strong>
+          <strong>{leftAmount}</strong>
           <span>Left to save</span>
         </div>
         <div>
@@ -183,15 +194,13 @@ export function ForecastRow({
         </div>
         <div>
           <strong>{shortDate(forecast?.date || null)}</strong>
-          <span>Projected</span>
+          <span>
+            Projected{forecast?.date ? ` · ${forecast.date.slice(0, 4)}` : ""}
+          </span>
         </div>
       </div>
       {forecast?.count === null ? (
         <p className="forecast-note">{forecast.reason}.</p>
-      ) : forecast?.date ? (
-        <p className="forecast-note">
-          {shortDate(forecast.date, true)} · assumes each planned contribution
-        </p>
       ) : null}
     </>
   );
@@ -334,9 +343,6 @@ export function PercentInput({
       }}
     />
   );
-}
-export function CurrencyLabel({ settings }: { settings: Settings }) {
-  return <span className="currency-label">{settings.currency}</span>;
 }
 export function Modal({
   title,

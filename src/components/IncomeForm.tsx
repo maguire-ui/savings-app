@@ -1,6 +1,14 @@
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Wallet } from "lucide-react";
-import { type Data, cents, today, money, mainGoal, budget, percent } from "../model";
+import {
+  type Data,
+  cents,
+  today,
+  money,
+  mainGoal,
+  budget,
+  percent,
+} from "../model";
 import {
   type IncomeSplit,
   type IncomeBreakdown,
@@ -95,11 +103,11 @@ export function IncomeForm({
   );
   const capped = Boolean(
     plan &&
-      quests.some(
-        (g) =>
-          actual(g.id) <
-          Math.floor((plan!.available * (split.quests[g.id] || 0)) / 100),
-      ),
+    quests.some(
+      (g) =>
+        actual(g.id) <
+        Math.floor((plan!.available * (split.quests[g.id] || 0)) / 100),
+    ),
   );
   return (
     <Modal
@@ -108,10 +116,7 @@ export function IncomeForm({
     >
       {step === "amount" ? (
         <form onSubmit={showSplit}>
-          <p className="income-intro">
-            Made some money? Give every dollar a place.
-          </p>
-          <Field label={`Amount earned (${currency})`}>
+          <Field label="Amount earned">
             <AmountInput
               label="Amount earned"
               value={amount}
@@ -153,8 +158,7 @@ export function IncomeForm({
           <FormError error={error} />
           <Button type="submit">Show my split</Button>
           <p className="fine-print">
-            Nothing is added until you review and confirm. Expected paydays are
-            forecasts only.
+            Review your split before anything is recorded.
           </p>
         </form>
       ) : (
@@ -219,9 +223,7 @@ export function IncomeForm({
                   </span>
                   <span className="income-destination-name">
                     <strong>{g.name}</strong>
-                    <small>
-                      {percent(split.quests[g.id])} · Side Quest
-                    </small>
+                    <small>{percent(split.quests[g.id])} · Side Quest</small>
                   </span>
                   <strong className="income-destination-amount">
                     {plan ? money(actual(g.id), currency) : "—"}
@@ -234,7 +236,7 @@ export function IncomeForm({
               </span>
               <span className="income-destination-name">
                 <strong>Fun money</strong>
-                <small>{percent(split.fun)} · yours to enjoy</small>
+                <small>{percent(split.fun)} · spending</small>
               </span>
               <strong className="income-destination-amount">
                 {plan ? money(plan.fun, currency) : "—"}
@@ -333,8 +335,8 @@ export function IncomeForm({
             Confirm & record income
           </Button>
           <p className="fine-print">
-            A tracking record only. Set the money aside yourself; the app does
-            not transfer funds.
+            Set the money aside yourself. This records it without transferring
+            funds.
           </p>
         </form>
       )}

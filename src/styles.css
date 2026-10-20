@@ -244,7 +244,7 @@ input::placeholder {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 44px;
   width: 100%;
   overflow-wrap: anywhere;
 }
@@ -252,17 +252,9 @@ input::placeholder {
   flex: 0 0 16px;
   color: var(--muted);
 }
-.currency-label {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--muted);
-  display: inline-block;
-}
-.main-progress > .currency-label {
-  margin-bottom: 8px;
-}
 .ring {
   width: min(260px, 100%);
+  container-type: inline-size;
   aspect-ratio: 1;
   position: relative;
   margin: 8px auto 25px;
@@ -298,20 +290,17 @@ input::placeholder {
   min-width: 0;
 }
 .ring-amount {
-  font-size: 45px;
-  letter-spacing: -2px;
+  font-size: min(45px, calc((100cqi - 64px) / var(--amount-width)));
+  letter-spacing: -0.035em;
   line-height: 1.1;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   max-width: 100%;
-  overflow-wrap: anywhere;
-}
-.ring-amount.small {
-  font-size: 26px;
-  letter-spacing: -0.9px;
+  white-space: nowrap;
 }
 .ring-content > span {
-  font-size: 17px;
+  font-size: min(17px, calc((100cqi - 64px) / var(--amount-width)));
+  white-space: nowrap;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -323,7 +312,7 @@ input::placeholder {
 .forecast-row {
   display: grid;
   grid-template-columns: 1fr 0.92fr 1fr;
-  margin: 10px 0 0;
+  margin: 10px 0 24px;
   text-align: center;
   min-width: 0;
 }
@@ -395,10 +384,6 @@ input::placeholder {
   font-weight: 500;
   padding: 4px 0;
   text-align: left;
-}
-.goal-detail-link {
-  font-size: 11px;
-  margin: 3px 0 0;
 }
 .section {
   border-top: 1px solid var(--line);
@@ -1224,9 +1209,6 @@ input::placeholder {
   .ring {
     width: 235px;
   }
-  .ring-amount {
-    font-size: 39px;
-  }
   .home-header {
     padding-top: 20px;
   }
@@ -1283,9 +1265,6 @@ input::placeholder {
 .activity-copy small,
 .insight-numbers span {
   font-size: 11px;
-}
-.ring-amount.small {
-  font-size: 22px;
 }
 @media (min-width: 800px) and (max-width: 999px) {
   .home-columns {
@@ -1648,4 +1627,19 @@ input[type="range"]::-moz-range-thumb {
   .percent-control input {
     width: 66px;
   }
+}
+
+.forecast-wide {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.forecast-wide > div:first-child {
+  grid-column: 1 / -1;
+  margin-bottom: 18px;
+}
+.forecast-wide > div:nth-child(2) {
+  border-left: 0;
+}
+.forecast-row strong {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }

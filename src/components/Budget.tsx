@@ -88,10 +88,7 @@ export function Budget({
     v !== data.settings.foodVisits;
   return (
     <>
-      <PageTitle
-        title={scenarioOnly ? "What if I saved more?" : "Your budget"}
-        subtitle="A plan for each paycheque."
-      />
+      <PageTitle title={scenarioOnly ? "What if I saved more?" : "Budget"} />
       <div className="budget-total">
         {money(p.income, currency, true)}
         <span> / paycheque</span>
@@ -176,7 +173,7 @@ export function Budget({
                 onChange={(e) => update("giving", Number(e.target.value))}
               />
             </Field>
-            <Field label={`Expenses per payday (${currency})`}>
+            <Field label="Expenses per payday">
               <AmountInput
                 value={String(draft.expenses / 100)}
                 onChange={(value) =>
@@ -269,8 +266,7 @@ export function Budget({
           </p>
         )}
         <p className="fine-print">
-          A preview only. Your settings and balances change only when you apply
-          this plan.
+          Apply to update future contributions. Existing balances stay the same.
         </p>
         <FormError error={error} />
         <div className="button-stack">
@@ -288,12 +284,9 @@ export function Budget({
         </div>
       </Section>
       {!scenarioOnly ? (
-        <Section title="The fast-food check-in">
-          <p className="section-description">
-            Small changes can make room for something bigger.
-          </p>
+        <Section title="Fast-food spending">
           <div className="form-grid">
-            <Field label={`Average visit (${currency})`}>
+            <Field label="Average visit">
               <AmountInput
                 value={foodCost}
                 onChange={setFoodCost}
@@ -352,9 +345,9 @@ export function Budget({
             ) : null}
           </p>
           <p className="fine-print">
-            Estimate: cost × visits × 52 ÷ 12. This is discretionary spending,
-            not a bill or a logged expense. Redirected money is a scenario only;
-            make sure it fits within your spending allowance.
+            Planning estimate only; this doesn’t log an expense. Monthly cost
+            uses 52 weeks ÷ 12. Any extra savings must fit your spending
+            allowance.
           </p>
           <Button
             secondary

@@ -98,13 +98,10 @@ export function SettingsPage({
   }
   return (
     <>
-      <PageTitle
-        title="Settings"
-        subtitle="A savings plan that fits your life."
-      />
+      <PageTitle title="Settings" />
       <form onSubmit={submit}>
         <Section title="Income & paydays">
-          <Field label={`Paycheque amount (${draft.currency})`}>
+          <Field label="Expected paycheque">
             <AmountInput
               value={income}
               onChange={setIncome}
@@ -160,7 +157,7 @@ export function SettingsPage({
           ) : null}
           <Field
             label="Next payday"
-            hint="Planning dates never add money. In Record income, mark an earning as your scheduled payday to advance this date."
+            hint="Used for forecasts. Record your actual earnings from Home."
           >
             <input
               type="date"
@@ -188,9 +185,6 @@ export function SettingsPage({
             />
           </Field>
           <p className="fine-print">
-            {draft.frequency === "biweekly"
-              ? "Biweekly uses 26 paycheques for the annual average. Some calendar years contain 27; forecasts use actual dates. "
-              : ""}
             {money(
               Math.round(
                 (Math.max(0, Number(income) || 0) * 100 * periods) / 12,
@@ -212,7 +206,7 @@ export function SettingsPage({
                 onChange={(value) => update("giving", value)}
               />
             </Field>
-            <Field label={`Expenses per payday (${draft.currency})`}>
+            <Field label="Expenses per payday">
               <AmountInput
                 label="Planned expenses"
                 value={expenses}
@@ -244,8 +238,7 @@ export function SettingsPage({
             </p>
           )}
           <p className="fine-print">
-            Save to use this split for future income. Your existing balances and
-            activity stay the same.
+            Applies to future income. Existing balances stay the same.
           </p>
           {mainGoal(data) ? (
             <Button type="submit" disabled={Boolean(splitError)}>
@@ -294,25 +287,12 @@ export function SettingsPage({
                 : "Preparing offline access"}
             </strong>
             <small>
-              {online ? "Online" : "You’re offline"} ·{" "}
-              {offlineReady
-                ? "The app interface has been saved on this device."
-                : "Open the hosted app online to download it."}
+              {online ? "Online" : "You’re offline"}
+              {!offlineReady ? " · Connect to download the app." : ""}
             </small>
           </div>
           {offlineReady ? <CheckCircle2 size={19} /> : null}
         </div>
-        <ol className="install-steps">
-          <li>Open this app’s website in Safari.</li>
-          <li>Tap Share, then Add to Home Screen.</li>
-          <li>Keep “Open as Web App” on, then tap Add.</li>
-          <li>Open it once online and check “Ready to use offline” here.</li>
-        </ol>
-        <p className="fine-print">
-          Use the Home Screen app for your saved plan. Safari and the Home
-          Screen app may have separate storage. Export and import a backup if
-          you move between them.
-        </p>
         <Button secondary onClick={install}>
           Home Screen instructions
         </Button>
@@ -323,15 +303,13 @@ export function SettingsPage({
           <div>
             <strong>Saved on this device</strong>
             <small>
-              No bank connection. No account. No financial data sent to a
-              server.
+              Your saved plan stays here between visits and app updates.
             </small>
           </div>
         </div>
         <p className="fine-print">
-          Device storage can be cleared by you or the system. Keep a backup
-          somewhere you trust. Backups contain your balances and activity in
-          plain text; there is no automatic cloud sync.
+          Keep a backup before switching devices, moving from Safari to the Home
+          Screen app, or clearing website data. There’s no cloud sync.
         </p>
         <div className="button-stack">
           <Button
@@ -391,10 +369,6 @@ export function SettingsPage({
           </p>
         ) : null}
       </Section>
-      <p className="app-footer">
-        Savings · Version 1.0
-        <br />A little closer, every payday.
-      </p>
       {incoming ? (
         <Confirm
           title="Restore this backup?"

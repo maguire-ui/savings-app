@@ -25,7 +25,6 @@ import {
   Button,
   GoalRow,
   AddLabel,
-  CurrencyLabel,
 } from "./UI";
 export function Activity({
   data,
@@ -144,7 +143,6 @@ export function Home({
                 {main.name}
                 <ChevronRight size={16} />
               </button>
-              <CurrencyLabel settings={data.settings} />
               <Ring
                 saved={b[main.id]}
                 target={main.target}
@@ -161,26 +159,19 @@ export function Home({
               <button className="text-link manual-savings-link" onClick={add}>
                 Add savings
               </button>
-              <button
-                className="text-link goal-detail-link"
-                onClick={() => openGoal(main)}
-              >
-                View goal & history <ChevronRight size={14} />
-              </button>
             </section>
           ) : (
             <Empty
-              title="Something to look forward to"
+              title="Set a savings goal"
               action={<Button onClick={newMain}>Set your main goal</Button>}
             >
-              Choose one big goal. Make room for the everyday. Start with
-              whatever you have.
+              Add a target and your starting balance.
             </Empty>
           )}
         </div>
         <div className="support-column">
           <Section
-            title="Next expected paycheque"
+            title="Next paycheque"
             action={
               <button
                 className="text-link"
@@ -194,33 +185,39 @@ export function Home({
               <>
                 <div className="paycheque-amount">
                   {money(plan.income, data.settings.currency, true)}
-                  <CurrencyLabel settings={data.settings} />
                 </div>
-                <div className="pay-split">
+                <div
+                  className="pay-split"
+                  style={{
+                    gridTemplateColumns: `repeat(${plan.expenses > 0 ? 4 : 3}, minmax(0, 1fr))`,
+                  }}
+                >
                   {[
                     ["Tithing", plan.giving],
                     ["Savings", plan.savings],
                     ["Spending", plan.spending],
                     ["Expenses", plan.expenses],
-                  ].map(([label, n]) => (
-                    <div key={label}>
-                      <span>{label}</span>
-                      <strong>
-                        {money(n as number, data.settings.currency, true)}
-                      </strong>
-                    </div>
-                  ))}
+                  ]
+                    .filter(
+                      ([label, n]) => label !== "Expenses" || Number(n) > 0,
+                    )
+                    .map(([label, n]) => (
+                      <div key={label}>
+                        <span>{label}</span>
+                        <strong>
+                          {money(n as number, data.settings.currency, true)}
+                        </strong>
+                      </div>
+                    ))}
                 </div>
                 <p className="fine-print paycheck-plan-note">
-                  Planning only. Enter what you earn to add money to your goals.
+                  Estimate only. Record income when you’re paid.
                 </p>
               </>
             ) : (
               <div className="setup-prompt">
-                <p>Give your goal a timeline.</p>
-                <span>
-                  Add your income and pay schedule to see what’s possible.
-                </span>
+                <p>Set up your income</p>
+                <span>Add a paycheque and schedule to see your forecast.</span>
                 <button
                   className="text-link"
                   onClick={() => navigate("settings")}
@@ -253,8 +250,8 @@ export function Home({
                 ))
             ) : (
               <div className="setup-prompt">
-                <p>The little things matter, too.</p>
-                <span>Keep a wishlist or save alongside your main goal.</span>
+                <p>No Side Quests yet</p>
+                <span>Save for smaller goals or keep a wishlist.</span>
                 <button
                   className="text-link"
                   onClick={() => navigate("quests")}

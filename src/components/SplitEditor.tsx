@@ -69,8 +69,7 @@ export function SplitEditor({
   return (
     <div className="split-editor">
       <p className="section-description">
-        Type the percentage for each destination. These shares divide the money
-        left after tithing and expenses.
+        Divide the money left after tithing and expenses. Total must be 100%.
       </p>
       {data.settings.income > 0 ? (
         <div className="split-preview-base">
@@ -145,9 +144,8 @@ export function SplitEditor({
         </p>
       ) : null}
       <p className="fine-print">
-        A positive Side Quest share funds it when you save. Once it reaches its
-        target, extra and future funding go to your main goal. This preview does
-        not add money.
+        Completed Side Quests return extra and future funding to your main goal.
+        Assigning a share funds a wishlist or paused quest when saved.
       </p>
     </div>
   );

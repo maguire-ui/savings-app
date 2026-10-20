@@ -316,7 +316,7 @@ export function TransactionForm({
         <p className="balance-hint">
           Saved here: {money(b[selected] || 0, data.settings.currency)}
         </p>
-        <Field label={`Amount (${data.settings.currency})`}>
+        <Field label="Amount">
           <AmountInput value={amount} onChange={setAmount} min="0.01" />
         </Field>
         <Field label="Date">
