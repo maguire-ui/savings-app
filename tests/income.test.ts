@@ -8,12 +8,15 @@ import {
   today,
   forecasts,
   type Data,
+  splitPool,
+  MAX_CENTS,
 } from "../src/model";
 import {
   incomeSplitFromPlan,
   exampleIncomeSplit,
   incomeBreakdown,
   recordIncome,
+  dataWithIncomeSplit,
 } from "../src/income";
 function setup(): Data {
   const d = emptyData();
@@ -237,4 +240,93 @@ test("multiple quest shares are divided predictably and wishlist funding can be 
   assert.equal(n.goals[1].status, "active");
   assert.equal(n.goals[2].status, "paused");
   assert.ok(validate(n));
+});
+
+test("a saved 60/30/10 income plan previews and records exact cents without adding money on save", () => {
+  const data = setup(),
+    original = structuredClone(data);
+  const plan = validate(
+    dataWithIncomeSplit(data, { main: 60, fun: 10, quests: { side: 30 } }),
+  );
+  assert.equal(plan.settings.savings, 90);
+  assert.equal(plan.settings.mode, "balanced");
+  assert.deepEqual(plan.transactions, original.transactions);
+  assert.deepEqual(balances(plan), { main: 0, side: 0 });
+  const preview = incomeBreakdown(plan, 20000);
+  assert.equal(preview.tithing, 2000);
+  assert.equal(preview.fun, 1800);
+  assert.deepEqual(preview.entries, [
+    { goalId: "side", amount: 5400 },
+    { goalId: "main", amount: 10800 },
+  ]);
+  assert.deepEqual(balances(recordIncome(plan, 20000)), {
+    main: 10800,
+    side: 5400,
+  });
+  assert.deepEqual(data, original);
+});
+
+test("multiple typed quest shares activate selected goals and conserve one savings pool", () => {
+  const data = setup();
+  data.goals.push({
+    ...data.goals[1],
+    id: "side2",
+    name: "Another quest",
+    status: "paused",
+  });
+  const plan = validate(
+    dataWithIncomeSplit(data, {
+      main: 50,
+      fun: 10,
+      quests: { side: 15, side2: 25 },
+    }),
+  );
+  assert.equal(plan.goals[2].status, "active");
+  const preview = incomeBreakdown(plan, 20000);
+  assert.deepEqual(preview.entries, [
+    { goalId: "side", amount: 2700 },
+    { goalId: "side2", amount: 4500 },
+    { goalId: "main", amount: 9000 },
+  ]);
+  assert.equal(
+    preview.tithing +
+      preview.fun +
+      preview.entries.reduce((s, e) => s + e.amount, 0),
+    20000,
+  );
+});
+
+test("repeating allocation fractions keep exact cents and still floor genuine fractional cents", () => {
+  const data = setup();
+  data.goals.forEach((g) => {
+    g.target = MAX_CENTS;
+  });
+  data.goals[1].allocation = 100 / 3;
+  for (const pool of [1, 2, 3, 100, 16200, 16201, MAX_CENTS]) {
+    const entries = splitPool(data, pool);
+    const side = entries.find((e) => e.goalId === "side")?.amount || 0;
+    assert.equal(side, Math.floor(pool / 3), `pool ${pool}`);
+    assert.equal(
+      entries.reduce((s, e) => s + e.amount, 0),
+      pool,
+    );
+  }
+});
+
+test("changing tithing and expenses still applies destination shares only to the remainder", () => {
+  const data = setup();
+  data.settings.giving = 20;
+  data.settings.expenses = 1000;
+  const plan = validate(
+    dataWithIncomeSplit(data, { main: 60, fun: 10, quests: { side: 30 } }),
+  );
+  const preview = incomeBreakdown(plan, 20000);
+  assert.equal(preview.tithing, 4000);
+  assert.equal(preview.expenses, 1000);
+  assert.equal(preview.available, 15000);
+  assert.equal(preview.fun, 1500);
+  assert.deepEqual(preview.entries, [
+    { goalId: "side", amount: 4500 },
+    { goalId: "main", amount: 9000 },
+  ]);
 });

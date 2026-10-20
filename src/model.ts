@@ -2,11 +2,7 @@ export const VERSION = 1;
 export const MAX_CENTS = 99_999_999_999;
 export type Frequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
 export type GoalStatus =
-  | "active"
-  | "wishlist"
-  | "paused"
-  | "completed"
-  | "archived";
+  "active" | "wishlist" | "paused" | "completed" | "archived";
 export interface Settings {
   income: number;
   frequency: Frequency;
@@ -209,10 +205,12 @@ export function splitPool(d: Data, pool: number, b = balances(d)): Entry[] {
       (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
     )) {
       if (g.type !== "side" || g.status !== "active" || g.deleted) continue;
+      const share = (pool * g.allocation) / 100;
       const amount = Math.min(
         left,
         remaining(g, b[g.id] || 0),
-        Math.floor((pool * g.allocation) / 100),
+        // Remove floating-point noise at an exact cent without rounding real fractions up.
+        Math.floor(share + Number.EPSILON * Math.max(1, Math.abs(share)) * 2),
       );
       if (amount > 0) {
         entries.push({ goalId: g.id, amount });

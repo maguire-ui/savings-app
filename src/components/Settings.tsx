@@ -14,9 +14,19 @@ import {
   today,
   validate,
   money,
+  mainGoal,
 } from "../model";
+import { incomeSplitFromPlan, dataWithIncomeSplit } from "../income";
+import { SplitEditor } from "./SplitEditor";
 import { download, PREVIOUS } from "../storage";
-import { PageTitle, Section, Field, AmountInput, Button } from "./UI";
+import {
+  PageTitle,
+  Section,
+  Field,
+  AmountInput,
+  PercentInput,
+  Button,
+} from "./UI";
 import { type Commit, FormError, Confirm } from "./Forms";
 export function SettingsPage({
   data,
@@ -33,6 +43,9 @@ export function SettingsPage({
 }) {
   const [draft, setDraft] = useState<Settings>({ ...data.settings }),
     [income, setIncome] = useState(String(data.settings.income / 100)),
+    [expenses, setExpenses] = useState(String(data.settings.expenses / 100)),
+    [split, setSplit] = useState(() => incomeSplitFromPlan(data)),
+    [splitChanged, setSplitChanged] = useState(false),
     [error, setError] = useState(""),
     [incoming, setIncoming] = useState<Data | null>(null),
     [backupLabel, setBackupLabel] = useState("");
@@ -42,9 +55,16 @@ export function SettingsPage({
   function submit(e: FormEvent) {
     e.preventDefault();
     try {
-      const settings = { ...draft, income: cents(income) };
-      validate({ ...data, settings });
-      if (commit({ ...data, settings }, "Settings saved")) setError("");
+      const settings = {
+        ...draft,
+        income: cents(income),
+        expenses: cents(expenses),
+      };
+      const next = splitChanged
+        ? dataWithIncomeSplit({ ...data, settings }, split)
+        : { ...data, settings };
+      validate(next);
+      if (commit(next, "Settings and income split saved")) setError("");
       else
         setError(
           "Could not save. Check device storage or reload if another tab changed this plan.",
@@ -56,6 +76,26 @@ export function SettingsPage({
   const periods = { weekly: 52, biweekly: 26, semimonthly: 24, monthly: 12 }[
     draft.frequency
   ];
+  let splitError = "";
+  if (splitChanged) {
+    try {
+      dataWithIncomeSplit(data, split);
+    } catch (e) {
+      splitError = (e as Error).message;
+    }
+  }
+  let previewIncome = 0,
+    previewExpenses = 0;
+  try {
+    previewIncome = cents(income);
+  } catch {
+    /* The form validates on save. */
+  }
+  try {
+    previewExpenses = cents(expenses);
+  } catch {
+    /* The form validates on save. */
+  }
   return (
     <>
       <PageTitle
@@ -160,6 +200,59 @@ export function SettingsPage({
             a month on average.
           </p>
         </Section>
+        <Section title="Your income split">
+          <div className="form-grid">
+            <Field
+              label="Tithing (% of income)"
+              hint="Taken from your full paycheque first."
+            >
+              <PercentInput
+                label="Tithing percentage"
+                value={draft.giving}
+                onChange={(value) => update("giving", value)}
+              />
+            </Field>
+            <Field label={`Expenses per payday (${draft.currency})`}>
+              <AmountInput
+                label="Planned expenses"
+                value={expenses}
+                onChange={setExpenses}
+              />
+            </Field>
+          </div>
+          {mainGoal(data) ? (
+            <SplitEditor
+              data={{
+                ...data,
+                settings: {
+                  ...draft,
+                  income: previewIncome,
+                  expenses: previewExpenses,
+                },
+              }}
+              split={split}
+              onChange={(value) => {
+                setSplit(value);
+                setSplitChanged(true);
+                setError("");
+              }}
+            />
+          ) : (
+            <p className="fine-print">
+              Create your main goal on Home to set where your savings go. Income
+              and other settings can still be saved now.
+            </p>
+          )}
+          <p className="fine-print">
+            Save to use this split for future income. Your existing balances and
+            activity stay the same.
+          </p>
+          {mainGoal(data) ? (
+            <Button type="submit" disabled={Boolean(splitError)}>
+              Save income split
+            </Button>
+          ) : null}
+        </Section>
         <Section title="Preferences">
           <Field
             label="Currency"
@@ -185,12 +278,10 @@ export function SettingsPage({
               <option value="dark">Dark</option>
             </select>
           </Field>
-          <p className="fine-print">
-            Tithing starts at 10% of each paycheque, as requested. Change it and
-            your savings allocation in Budget.
-          </p>
           <FormError error={error} />
-          <Button type="submit">Save settings</Button>
+          <Button type="submit" disabled={Boolean(splitError)}>
+            Save settings
+          </Button>
         </Section>
       </form>
       <Section title="On your iPhone">

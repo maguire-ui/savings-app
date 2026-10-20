@@ -76,7 +76,7 @@ export function exampleIncomeSplit(data: Data): IncomeSplit {
 }
 export function dataWithIncomeSplit(data: Data, split: IncomeSplit): Data {
   if (!mainGoal(data))
-    throw Error("Create your main goal before recording income.");
+    throw Error("Create your main goal before setting an income split.");
   const eligible = new Set(incomeQuests(data).map((g) => g.id));
   const shares = [split.main, split.fun, ...Object.values(split.quests)];
   if (shares.some((n) => !Number.isFinite(n) || n < 0 || n > 100))
@@ -88,7 +88,7 @@ export function dataWithIncomeSplit(data: Data, split: IncomeSplit): Data {
   const total = shares.reduce((sum, n) => sum + n, 0);
   if (Math.abs(total - 100) > 0.000001)
     throw Error(
-      `Your split must add up to 100% (currently ${Math.round(total * 100) / 100}%).`,
+      `Your split must add up to 100% (currently ${Number(total.toFixed(6))}%).`,
     );
   const savingShare = 100 - split.fun;
   const hasSides = Object.values(split.quests).some((n) => n > 0);

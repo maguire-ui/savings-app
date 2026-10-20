@@ -1559,3 +1559,93 @@ input[type="range"]::-moz-range-thumb {
 .paycheck-plan-note {
   margin-bottom: 0;
 }
+
+.split-preview-base {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 15px 0 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.split-preview-base strong {
+  color: var(--text);
+  font-size: 16px;
+}
+.split-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 0;
+  border-top: 1px solid var(--line);
+}
+.split-editor-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.split-editor-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+.split-editor-name strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.split-editor-name small {
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.split-editor-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  width: 100px;
+  flex-shrink: 0;
+}
+.split-editor-control > small {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.percent-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.percent-control input {
+  width: 76px;
+  text-align: right;
+  padding: 10px 8px;
+}
+.percent-control > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.split-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 17px;
+  font-size: 14px;
+  color: var(--accent);
+}
+.split-total.invalid {
+  color: var(--error);
+}
+@media (max-width: 359px) {
+  .split-editor-row {
+    gap: 9px;
+  }
+  .split-editor-control {
+    width: 91px;
+  }
+  .percent-control input {
+    width: 66px;
+  }
+}

@@ -20,6 +20,7 @@ import {
   Button,
   ForecastRow,
   AmountInput,
+  PercentInput,
 } from "./UI";
 import { type Commit, FormError } from "./Forms";
 export function Budget({
@@ -137,24 +138,32 @@ export function Budget({
         ))}
       </div>
       <Section title="Make room for savings">
-        <Field
-          label={`Savings percentage · ${percent(draft.savings)}`}
-          hint={`Applies to ${money(p.available, currency)} after tithing and expenses.`}
-        >
-          <input
-            aria-label="Savings percentage"
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={draft.savings}
-            onChange={(e) => update("savings", Number(e.target.value))}
-          />
-        </Field>
-        <div className="range-labels">
-          <span>More spending</span>
-          <span>More saving</span>
+        <div className="form-grid">
+          <Field
+            label="Total savings (%)"
+            hint={`Main goal and Side Quests together. Applies to ${money(p.available, currency)} after tithing and expenses.`}
+          >
+            <PercentInput
+              label="Savings percentage"
+              value={draft.savings}
+              onChange={(value) => update("savings", value)}
+            />
+          </Field>
+          <Field
+            label="Spending (%)"
+            hint="The rest of the money after tithing and expenses."
+          >
+            <PercentInput
+              label="Spending percentage"
+              value={100 - draft.savings}
+              onChange={(value) => update("savings", 100 - value)}
+            />
+          </Field>
         </div>
+        <p className="fine-print">
+          For separate main-goal and Side Quest percentages, open Settings →
+          Your income split.
+        </p>
         {!scenarioOnly ? (
           <div className="form-grid">
             <Field label="Tithing (% of paycheque)">

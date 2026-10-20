@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   X,
   ArrowLeft,
@@ -291,6 +291,47 @@ export function AmountInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       required={required}
+    />
+  );
+}
+const editablePercent = (n: number) =>
+  Number.isFinite(n) ? String(Number(n.toPrecision(12))) : "";
+export function PercentInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [text, setText] = useState(() => editablePercent(value));
+  useEffect(() => {
+    setText((current) =>
+      Number(current) === value ? current : editablePercent(value),
+    );
+  }, [value]);
+  return (
+    <input
+      aria-label={label}
+      type="number"
+      inputMode="decimal"
+      min="0"
+      max="100"
+      step="any"
+      value={text}
+      onFocus={(e) => {
+        if (e.currentTarget.value === "0") e.currentTarget.select();
+      }}
+      onChange={(e) => {
+        const next = e.target.value.replace(/^0+(?=\d)/, "");
+        const bounded = Math.max(0, Math.min(100, Number(next)));
+        setText(next && Number(next) !== bounded ? String(bounded) : next);
+        onChange(bounded);
+      }}
+      onBlur={() => {
+        if (!text) setText("0");
+      }}
     />
   );
 }
