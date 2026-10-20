@@ -41,7 +41,7 @@ export function GoalForm({
     [target, setTarget] = useState(goal ? String(goal.target / 100) : ""),
     [opening, setOpening] = useState(""),
     [status, setStatus] = useState<GoalStatus>(goal?.status || "wishlist"),
-    [allocation, setAllocation] = useState(goal?.allocation || 0),
+    [allocation, setAllocation] = useState(String(goal?.allocation || 0)),
     [priority, setPriority] = useState(goal?.priority || 2),
     [targetDate, setTargetDate] = useState(goal?.targetDate || ""),
     [icon, setIcon] = useState(goal?.icon || "target"),
@@ -58,7 +58,7 @@ export function GoalForm({
         target: amount,
         type,
         status: type === "main" ? "active" : status,
-        allocation,
+        allocation: Number(allocation),
         priority,
         targetDate,
         icon,
@@ -169,9 +169,17 @@ export function GoalForm({
                   type="number"
                   min="0"
                   max="100"
-                  step="1"
+                  step="any"
                   value={allocation}
-                  onChange={(e) => setAllocation(Number(e.target.value))}
+                  onFocus={(e) => {
+                    if (e.currentTarget.value === "0") e.currentTarget.select();
+                  }}
+                  onChange={(e) =>
+                    setAllocation(e.target.value.replace(/^0+(?=\d)/, ""))
+                  }
+                  onBlur={() => {
+                    if (!allocation) setAllocation("0");
+                  }}
                 />
               </Field>
             ) : null}
