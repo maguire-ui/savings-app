@@ -43,7 +43,15 @@ export function Budget({
     currency = draft.currency;
   const changed = JSON.stringify(draft) !== JSON.stringify(data.settings);
   const update = (key: keyof Settings, value: unknown) =>
-    setDraft((s) => ({ ...s, [key]: value }));
+    setDraft((s) => ({
+      ...s,
+      [key]:
+        key === "giving" || key === "savings"
+          ? Math.min(100, Math.max(0, Number(value) || 0))
+          : key === "expenses"
+            ? Math.min(99_999_999_999, Math.max(0, Number(value) || 0))
+            : value,
+    }));
   const allocations = main ? splitPool(preview, p.savings) : [];
   function apply() {
     if (commit({ ...data, settings: draft }, "Savings plan applied"))

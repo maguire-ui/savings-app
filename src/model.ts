@@ -101,6 +101,7 @@ export function cents(value: string | number) {
   return Math.round((n + Number.EPSILON) * 100);
 }
 export function money(n: number, currency = "CAD", compact = false) {
+  if (!Number.isFinite(n)) return "—";
   return new Intl.NumberFormat("en-CA", {
     style: "currency",
     currency,

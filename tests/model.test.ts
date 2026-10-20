@@ -13,6 +13,7 @@ import {
   voidTransaction,
   foodEstimate,
   cents,
+  money,
   type Data,
 } from "../src/model";
 function setup(): Data {
@@ -253,4 +254,9 @@ test("preview and forecasts are pure; backups round-trip exactly", () => {
   );
   assert.equal(JSON.stringify(d), original);
   assert.deepEqual(validate(JSON.parse(JSON.stringify(d))), d);
+});
+
+test("nonfinite preview values never render as NaN or Infinity", () => {
+  for (const n of [NaN, Infinity, -Infinity]) assert.equal(money(n), "—");
+  assert.equal(money(25000), "$250.00");
 });
