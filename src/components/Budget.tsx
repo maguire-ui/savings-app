@@ -7,6 +7,7 @@ import {
   balances,
   splitPool,
   money,
+  percent,
   mainGoal,
   remaining,
   foodEstimate,
@@ -129,8 +130,7 @@ export function Budget({
               {label}
             </span>
             <small>
-              {p.income ? ((Number(amount) / p.income) * 100).toFixed(1) : 0}%
-              of pay
+              {percent(p.income ? (Number(amount) / p.income) * 100 : 0)} of pay
             </small>
             <strong>{money(Number(amount), currency, true)}</strong>
           </div>
@@ -138,7 +138,7 @@ export function Budget({
       </div>
       <Section title="Make room for savings">
         <Field
-          label={`Savings percentage · ${draft.savings}%`}
+          label={`Savings percentage · ${percent(draft.savings)}`}
           hint={`Applies to ${money(p.available, currency)} after tithing and expenses.`}
         >
           <input

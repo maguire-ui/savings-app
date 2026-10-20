@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Wallet } from "lucide-react";
-import { type Data, cents, today, money, mainGoal, budget } from "../model";
+import { type Data, cents, today, money, mainGoal, budget, percent } from "../model";
 import {
   type IncomeSplit,
   type IncomeBreakdown,
@@ -81,7 +81,6 @@ export function IncomeForm({
     }));
     setError("");
   }
-  const formatPercent = (n: number) => `${Math.round(n * 100) / 100}%`;
   const actual = (goalId: string) =>
     plan?.entries.find((e) => e.goalId === goalId)?.amount || 0;
   const deduction = budget(
@@ -178,7 +177,7 @@ export function IncomeForm({
           <div className="income-deductions">
             <div>
               <span>
-                Tithing <small>{data.settings.giving}% of income</small>
+                Tithing <small>{percent(data.settings.giving)} of income</small>
               </span>
               <strong>{money(deduction.giving, currency)}</strong>
             </div>
@@ -204,7 +203,7 @@ export function IncomeForm({
                 </span>
                 <span className="income-destination-name">
                   <strong>{main.name}</strong>
-                  <small>{formatPercent(split.main)} · main goal</small>
+                  <small>{percent(split.main)} · main goal</small>
                 </span>
                 <strong className="income-destination-amount">
                   {plan ? money(actual(main.id), currency) : "—"}
@@ -221,7 +220,7 @@ export function IncomeForm({
                   <span className="income-destination-name">
                     <strong>{g.name}</strong>
                     <small>
-                      {formatPercent(split.quests[g.id])} · Side Quest
+                      {percent(split.quests[g.id])} · Side Quest
                     </small>
                   </span>
                   <strong className="income-destination-amount">
@@ -235,7 +234,7 @@ export function IncomeForm({
               </span>
               <span className="income-destination-name">
                 <strong>Fun money</strong>
-                <small>{formatPercent(split.fun)} · yours to enjoy</small>
+                <small>{percent(split.fun)} · yours to enjoy</small>
               </span>
               <strong className="income-destination-amount">
                 {plan ? money(plan.fun, currency) : "—"}

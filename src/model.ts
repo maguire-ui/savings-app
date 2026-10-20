@@ -108,6 +108,13 @@ export function money(n: number, currency = "CAD", compact = false) {
     maximumFractionDigits: compact && n % 100 === 0 ? 0 : 2,
   }).format(n / 100);
 }
+const percentageFormat = new Intl.NumberFormat("en-CA", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
+export function percent(n: number) {
+  return Number.isFinite(n) ? percentageFormat.format(n / 100) : "—";
+}
 export const remaining = (g: Goal, b: number) => Math.max(0, g.target - b);
 export function balances(d: Data) {
   const b: Record<string, number> = Object.fromEntries(

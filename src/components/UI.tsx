@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   money,
+  percent,
   shortDate,
   type Forecast,
   type Settings,
@@ -229,7 +230,7 @@ export function GoalRow({
           {goal.status === "completed"
             ? "Completed"
             : goal.status === "active"
-              ? `${goal.allocation}% of savings`
+              ? `${percent(goal.allocation)} of savings`
               : {
                   wishlist: "Wishlist",
                   paused: "Paused",
