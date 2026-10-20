@@ -139,10 +139,18 @@ export function Ring({
       role="img"
       aria-label={`${money(saved, currency)} of ${money(target, currency)}, ${Math.floor(pct)} percent saved`}
     >
-      <svg viewBox="0 0 260 260" aria-hidden="true">
+      <svg
+        className="ring-graphic"
+        width="260"
+        height="260"
+        viewBox="0 0 260 260"
+        aria-hidden="true"
+      >
         <circle className="ring-track" cx="130" cy="130" r="117" />
         <circle
           className="ring-value"
+          transform="rotate(-90 130 130)"
+          opacity={pct > 0 ? 1 : 0}
           cx="130"
           cy="130"
           r="117"
@@ -151,20 +159,22 @@ export function Ring({
         />
       </svg>
       <div className="ring-content">
-        <strong
-          className="ring-amount"
-          style={{ "--amount-width": amount.length * 0.62 } as CSSProperties}
-        >
-          {amount}
-        </strong>
-        <span
-          style={
-            { "--amount-width": goalAmount.length * 0.58 } as CSSProperties
-          }
-        >
-          {goalAmount}
-        </span>
-        <b>{Math.floor(pct)}% saved</b>
+        <div className="ring-label">
+          <strong
+            className="ring-amount"
+            style={{ "--amount-width": amount.length * 0.62 } as CSSProperties}
+          >
+            {amount}
+          </strong>
+          <span
+            style={
+              { "--amount-width": goalAmount.length * 0.58 } as CSSProperties
+            }
+          >
+            {goalAmount}
+          </span>
+          <b>{Math.floor(pct)}% saved</b>
+        </div>
       </div>
     </div>
   );

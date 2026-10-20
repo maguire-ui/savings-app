@@ -140,7 +140,7 @@ export function Home({
           {main ? (
             <section className="main-progress">
               <button className="goal-title" onClick={() => openGoal(main)}>
-                {main.name}
+                <span className="goal-title-label">{main.name}</span>
                 <ChevronRight size={16} />
               </button>
               <Ring

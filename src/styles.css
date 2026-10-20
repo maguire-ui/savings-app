@@ -240,13 +240,17 @@ input::placeholder {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.35px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px minmax(0, auto) 16px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: 44px;
   width: 100%;
   overflow-wrap: anywhere;
+}
+.goal-title::before {
+  content: "";
 }
 .goal-title svg {
   flex: 0 0 16px;
@@ -259,11 +263,12 @@ input::placeholder {
   position: relative;
   margin: 8px auto 25px;
 }
-.ring svg {
+.ring-graphic {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  transform: rotate(-90deg);
   overflow: visible;
 }
 .ring circle {
@@ -280,14 +285,20 @@ input::placeholder {
 }
 .ring-content {
   position: absolute;
-  inset: 32px;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  min-width: 0;
+}
+.ring-label {
+  width: calc(100% - 64px);
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 7px;
-  pointer-events: none;
-  min-width: 0;
+  text-align: center;
 }
 .ring-amount {
   font-size: min(45px, calc((100cqi - 64px) / var(--amount-width)));
@@ -298,16 +309,17 @@ input::placeholder {
   max-width: 100%;
   white-space: nowrap;
 }
-.ring-content > span {
+.ring-label > span {
   font-size: min(17px, calc((100cqi - 64px) / var(--amount-width)));
   white-space: nowrap;
+  line-height: 1.25;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.ring-content > b {
+.ring-label > b {
   font-size: 13px;
   color: var(--accent);
-  margin-top: 8px;
+  line-height: 1.25;
 }
 .forecast-row {
   display: grid;
@@ -484,12 +496,12 @@ input::placeholder {
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  align-items: start;
+  align-items: center;
   font-size: 13px;
 }
 .goal-name {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   font-weight: 550;
   min-width: 0;
@@ -600,8 +612,8 @@ input::placeholder {
   bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 9px max(12px, env(safe-area-inset-left))
     calc(8px + env(safe-area-inset-bottom));
   background: var(--bg);
@@ -614,7 +626,7 @@ input::placeholder {
   justify-content: center;
   gap: 5px;
   min-height: 48px;
-  min-width: 64px;
+  min-width: 0;
   font-size: 10px;
   font-weight: 500;
   color: var(--muted);
@@ -630,7 +642,7 @@ input::placeholder {
   padding: calc(33px + env(safe-area-inset-top)) 0 27px;
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
 }
 .page-title > div {
   flex: 1;
@@ -642,11 +654,7 @@ input::placeholder {
   margin-top: 9px;
 }
 .page-title .back {
-  margin-top: -6px;
   margin-left: -10px;
-}
-.page-title .icon-button:last-child {
-  margin-top: -6px;
 }
 .empty {
   text-align: center;
@@ -979,7 +987,7 @@ input::placeholder {
 }
 .status-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   margin: 8px 0 18px;
   color: var(--accent);
@@ -1559,6 +1567,10 @@ input[type="range"]::-moz-range-thumb {
   border-top: 1px solid var(--line);
 }
 .split-editor-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   color: var(--accent);
   flex-shrink: 0;
 }
