@@ -343,7 +343,7 @@ export function recordPayday(
   if (d.transactions.some((t) => t.payday === day && !t.voided))
     throw Error("This payday is already recorded.");
   const plan = budget(d.settings, gross);
-  if (!plan.valid) throw Error("Expenses exceed the paycheque after giving.");
+  if (!plan.valid) throw Error("Expenses exceed the paycheque after tithing.");
   if (gross <= 0) throw Error("Enter a paycheque amount greater than zero.");
   const entries = splitPool(d, plan.savings);
   const following = paydays(d.settings, 2, day)[1];
@@ -447,7 +447,7 @@ export function validate(value: unknown): Data {
       );
   }
   if (!budget(s).valid)
-    throw Error("Expenses cannot exceed income after giving.");
+    throw Error("Expenses cannot exceed income after tithing.");
   if (d.goals.length > 500 || d.transactions.length > 100000)
     throw Error("This backup exceeds the supported size.");
   const ids = new Set<string>();

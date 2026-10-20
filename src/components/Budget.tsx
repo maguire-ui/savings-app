@@ -116,7 +116,7 @@ export function Budget({
       </div>
       <div className="detail-list budget-breakdown">
         {[
-          ["Giving", p.giving],
+          ["Tithing", p.giving],
           ["Savings", p.savings],
           ["Spending", p.spending],
           ["Expenses", p.expenses],
@@ -139,7 +139,7 @@ export function Budget({
       <Section title="Make room for savings">
         <Field
           label={`Savings percentage · ${draft.savings}%`}
-          hint={`Applies to ${money(p.available, currency)} after giving and expenses.`}
+          hint={`Applies to ${money(p.available, currency)} after tithing and expenses.`}
         >
           <input
             aria-label="Savings percentage"
@@ -157,7 +157,7 @@ export function Budget({
         </div>
         {!scenarioOnly ? (
           <div className="form-grid">
-            <Field label="Giving (% of paycheque)">
+            <Field label="Tithing (% of paycheque)">
               <input
                 type="number"
                 min="0"
@@ -182,7 +182,7 @@ export function Budget({
           </div>
         ) : null}
         {!p.valid ? (
-          <FormError error="Expenses exceed income after giving. Reduce expenses or update income." />
+          <FormError error="Expenses exceed income after tithing. Reduce expenses or update income." />
         ) : null}
         <Field label="Funding mode">
           <select
@@ -219,8 +219,8 @@ export function Budget({
             </div>
             <p className="fine-print">
               These are editable starting points. 50/30/20 splits money after
-              giving into expenses, spending, and savings. 70/20/10 uses 10%
-              giving, approximately 20% savings, and the rest spending. Your
+              tithing into expenses, spending, and savings. 70/20/10 uses 10%
+              tithing, approximately 20% savings, and the rest spending. Your
               current plan is always customizable.
             </p>
           </details>

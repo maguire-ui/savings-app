@@ -389,7 +389,7 @@ export function PaydayForm({
         </Field>
         <div className="detail-list">
           <div>
-            <span>Giving</span>
+            <span>Tithing</span>
             <strong>{money(plan.giving, data.settings.currency)}</strong>
           </div>
           <div>
@@ -406,7 +406,7 @@ export function PaydayForm({
           </div>
         </div>
         <p className="fine-print">
-          Only savings contributions are added to your goal balances. Giving,
+          Only savings contributions are added to your goal balances. Tithing,
           expenses, and spending are a plan, not logged payments. Your next
           payday moves forward.
         </p>

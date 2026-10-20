@@ -19,7 +19,7 @@ Safari and a Home Screen installation can have separate storage. Set up the Home
 
 - One main savings goal with circular progress, remaining balance, scheduled-payday forecasts, and contribution history.
 - Weekly, true 14-day biweekly, twice-monthly, and monthly pay schedules. Monthly day 31 recovers after short months instead of drifting to day 28.
-- Giving first, optional expenses, then a customizable savings/spending split. Defaults are editable suggestions; income, goals, and activity start empty.
+- Tithing first, optional expenses, then a customizable savings/spending split. Defaults are editable suggestions; income, goals, and activity start empty.
 - Focus or Balanced funding. Side Quests share the savings pool; completed quests return future funding to the main goal. Purchases debit only the selected goal.
 - Explicit Apply for budget and what-if previews. Projections simulate goal completion and future reallocation without recording transactions.
 - Manual savings, withdrawals, purchases, recorded paydays, undo with negative-balance protection, goal editing, archiving, and deletion.
@@ -31,7 +31,7 @@ Safari and a Home Screen installation can have separate storage. Set up the Home
 
 This is a **tracking and planning app**. It does not move money, connect to a bank, or verify balances. No financial data is uploaded by the app; the host receives ordinary requests for its static files. There is no cloud sync, login, or bank connection. Different devices have separate plans.
 
-Money is stored in integer cents. Balances are derived from immutable activity entries with soft undo. Giving is a percentage of the paycheque; expenses are deducted next; savings are a percentage of the remainder. Side Quest percentages refer to the resulting savings pool, not gross pay. A completed quest's excess contribution for a payday goes to the main goal, preserving every cent. Fractional Side Quest cents round down and the main goal receives the remainder.
+Money is stored in integer cents. Balances are derived from immutable activity entries with soft undo. Tithing is a percentage of the paycheque; expenses are deducted next; savings are a percentage of the remainder. Side Quest percentages refer to the resulting savings pool, not gross pay. A completed quest's excess contribution for a payday goes to the main goal, preserving every cent. Fractional Side Quest cents round down and the main goal receives the remainder.
 
 Forecasts start on the first scheduled payday on or after today and do not assume missed paydays were recorded. The Nth contribution lands on the Nth scheduled payday. Forecasts assume the planned income and allocations continue, with no interest or investment growth, and have a 50-year limit. Annual averages use 52/26/24/12 paycheques; actual date forecasts follow the calendar. A particular biweekly year may include 27 paydays.
 

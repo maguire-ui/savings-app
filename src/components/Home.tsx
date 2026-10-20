@@ -195,7 +195,7 @@ export function Home({
                 </div>
                 <div className="pay-split">
                   {[
-                    ["Giving", plan.giving],
+                    ["Tithing", plan.giving],
                     ["Savings", plan.savings],
                     ["Spending", plan.spending],
                     ["Expenses", plan.expenses],

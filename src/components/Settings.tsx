@@ -186,7 +186,7 @@ export function SettingsPage({
             </select>
           </Field>
           <p className="fine-print">
-            Giving starts at 10% of each paycheque, as requested. Change it and
+            Tithing starts at 10% of each paycheque, as requested. Change it and
             your savings allocation in Budget.
           </p>
           <FormError error={error} />

@@ -667,7 +667,7 @@ export default function App() {
           {tx.kind === "payday" ? (
             <p className="fine-print">
               Paycheque: {money(tx.gross || 0, data.settings.currency)} ·
-              Giving: {money(tx.giving || 0, data.settings.currency)} ·
+              Tithing: {money(tx.giving || 0, data.settings.currency)} ·
               Expenses: {money(tx.expenses || 0, data.settings.currency)} ·
               Available spending:{" "}
               {money(tx.spending || 0, data.settings.currency)}
