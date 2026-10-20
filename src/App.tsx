@@ -1,0 +1,719 @@
+import { useEffect, useState } from "react";
+import {
+  Home as HomeIcon,
+  Flag,
+  ChartPie,
+  Settings as SettingsIcon,
+  Plus,
+  WifiOff,
+  RefreshCw,
+  Pencil,
+  Archive,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import {
+  type Data,
+  type Goal,
+  type Transaction,
+  balances,
+  forecasts,
+  remaining,
+  money,
+  mainGoal,
+  shortDate,
+  voidTransaction,
+  validate,
+} from "./model";
+import { load, save, download, KEY, PREVIOUS } from "./storage";
+import { Home, Activity } from "./components/Home";
+import { Budget } from "./components/Budget";
+import { SettingsPage } from "./components/Settings";
+import {
+  PageTitle,
+  Section,
+  Ring,
+  ForecastRow,
+  Button,
+  GoalRow,
+  Empty,
+  AddLabel,
+  Modal,
+} from "./components/UI";
+import {
+  GoalForm,
+  TransactionForm,
+  PaydayForm,
+  Confirm,
+} from "./components/Forms";
+const loaded = load();
+export default function App() {
+  const [data, setData] = useState<Data>(loaded.data),
+    [recovery, setRecovery] = useState(loaded.error),
+    [page, setPage] = useState("home"),
+    [selected, setSelected] = useState<string | null>(null),
+    [sheet, setSheet] = useState<
+      "goal" | "transaction" | "payday" | "install" | null
+    >(null),
+    [editing, setEditing] = useState<Goal | undefined>(),
+    [goalType, setGoalType] = useState<"main" | "side">("main"),
+    [tx, setTx] = useState<Transaction | null>(null),
+    [confirm, setConfirm] = useState<{
+      title: string;
+      copy: string;
+      action: string;
+      run: () => void;
+    } | null>(null),
+    [toast, setToast] = useState(""),
+    [online, setOnline] = useState(navigator.onLine),
+    [swError, setSwError] = useState("");
+  const {
+    offlineReady: [offlineReady],
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisterError: () =>
+      setSwError(
+        "Offline download failed. Reconnect and reopen the app to try again.",
+      ),
+  });
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    addEventListener("online", update);
+    addEventListener("offline", update);
+    const storage = (e: StorageEvent) => {
+      if (e.key === KEY) {
+        const fresh = load();
+        if (fresh.error) setRecovery(fresh.error);
+        else {
+          setData(fresh.data);
+          setToast("Updated from another tab.");
+        }
+      }
+    };
+    addEventListener("storage", storage);
+    return () => {
+      removeEventListener("online", update);
+      removeEventListener("offline", update);
+      removeEventListener("storage", storage);
+    };
+  }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 4500);
+    return () => clearTimeout(t);
+  }, [toast]);
+  useEffect(() => {
+    document.documentElement.dataset.appearance = data.settings.appearance;
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const theme = () => {
+      const dark =
+        data.settings.appearance === "dark" ||
+        (data.settings.appearance === "system" && media.matches);
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", dark ? "#151e19" : "#f7f6f2");
+    };
+    theme();
+    media.addEventListener("change", theme);
+    return () => media.removeEventListener("change", theme);
+  }, [data.settings.appearance]);
+  function commit(next: Data, message = "Saved") {
+    try {
+      const stored = save(next, data.revision);
+      setData(stored);
+      setToast(message);
+      return true;
+    } catch (err) {
+      setToast(
+        (err as Error).message ||
+          "Storage is full. Export a backup before making more changes.",
+      );
+      return false;
+    }
+  }
+  function navigate(next: string) {
+    setPage(next);
+    setSelected(null);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function newGoal(type: "main" | "side") {
+    setGoalType(type);
+    setEditing(undefined);
+    setSheet("goal");
+  }
+  function openGoal(g: Goal) {
+    setSelected(g.id);
+    setPage("goal");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  const b = balances(data),
+    fc = forecasts(data),
+    goal = data.goals.find((g) => g.id === selected),
+    main = mainGoal(data);
+  function archive(g: Goal) {
+    setConfirm({
+      title: "Archive this goal?",
+      copy: "Its balance and activity stay saved. It will stop receiving future funding. You can restore it from the archived list.",
+      action: "Archive goal",
+      run: () => {
+        if (
+          commit(
+            {
+              ...data,
+              goals: data.goals.map((x) =>
+                x.id === g.id ? { ...x, status: "archived" } : x,
+              ),
+            },
+            "Goal archived",
+          )
+        ) {
+          setConfirm(null);
+          navigate("quests");
+        }
+      },
+    });
+  }
+  function deleteGoal(g: Goal) {
+    if (b[g.id]) {
+      setToast(
+        "Remove or reassign the balance before deleting. You can archive it with its balance intact.",
+      );
+      return;
+    }
+    setConfirm({
+      title: "Delete this goal?",
+      copy: "The goal will be hidden. Its activity is retained in your backup and history.",
+      action: "Delete goal",
+      run: () => {
+        if (
+          commit(
+            {
+              ...data,
+              goals: data.goals.map((x) =>
+                x.id === g.id ? { ...x, status: "archived", deleted: true } : x,
+              ),
+            },
+            "Goal deleted",
+          )
+        ) {
+          setConfirm(null);
+          navigate("quests");
+        }
+      },
+    });
+  }
+  if (recovery)
+    return (
+      <main className="recovery">
+        <h1>Your savings are still here.</h1>
+        <p>{recovery}</p>
+        <div className="button-stack">
+          <Button
+            onClick={() =>
+              download(
+                loaded.raw || localStorage.getItem(KEY) || "",
+                "savings-recovery-original.json",
+              )
+            }
+          >
+            Download original data
+          </Button>
+          <Button
+            secondary
+            onClick={() => {
+              try {
+                const raw = localStorage.getItem(PREVIOUS);
+                if (!raw) throw Error("No previous save is available.");
+                const previous = validate(JSON.parse(raw));
+                localStorage.setItem(KEY, JSON.stringify(previous));
+                setData(previous);
+                setRecovery("");
+              } catch (e) {
+                setToast((e as Error).message);
+              }
+            }}
+          >
+            Recover previous save
+          </Button>
+          <label className="button-secondary">
+            Restore a backup
+            <input
+              type="file"
+              accept=".json"
+              className="visually-hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  if (file.size > 5e6) throw Error("Backup too large.");
+                  const recovered = validate(JSON.parse(await file.text()));
+                  download(
+                    localStorage.getItem(KEY) || "",
+                    "savings-recovery-original.json",
+                  );
+                  localStorage.setItem(KEY, JSON.stringify(recovered));
+                  setData(recovered);
+                  setRecovery("");
+                } catch (err) {
+                  setToast((err as Error).message);
+                }
+              }}
+            />
+          </label>
+        </div>
+        {toast ? <p role="alert">{toast}</p> : null}
+      </main>
+    );
+  return (
+    <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <div className="desktop-brand">
+        <span className="brand-dot" />
+        Savings
+      </div>
+      <nav className="navigation" aria-label="Main navigation">
+        {[
+          { id: "home", label: "Home", Icon: HomeIcon },
+          { id: "quests", label: "Side Quests", Icon: Flag },
+          { id: "budget", label: "Budget", Icon: ChartPie },
+          { id: "settings", label: "Settings", Icon: SettingsIcon },
+        ].map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            aria-current={page === id ? "page" : undefined}
+            className={page === id ? "active" : ""}
+            onClick={() => navigate(id)}
+          >
+            <Icon size={21} strokeWidth={1.7} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="app-shell">
+        {!online ? (
+          <div className="connection-banner">
+            <WifiOff size={15} />
+            Offline · changes stay on this device
+          </div>
+        ) : null}
+        {needRefresh ? (
+          <div className="update-banner">
+            <span>A new version is ready. Your data stays saved.</span>
+            <button
+              onClick={() => {
+                download(
+                  JSON.stringify(data, null, 2),
+                  "savings-before-update.json",
+                );
+                void updateServiceWorker(true);
+              }}
+            >
+              <RefreshCw size={15} />
+              Update
+            </button>
+          </div>
+        ) : null}
+        {swError ? <p className="form-error">{swError}</p> : null}
+        <main id="main" key={page}>
+          {page === "home" ? (
+            <Home
+              data={data}
+              openGoal={openGoal}
+              newMain={() => newGoal("main")}
+              add={() => {
+                setSelected(main?.id || null);
+                setSheet("transaction");
+              }}
+              payday={() => setSheet("payday")}
+              navigate={navigate}
+              activity={setTx}
+            />
+          ) : null}
+          {page === "quests" ? (
+            <>
+              <PageTitle
+                title="Side Quests"
+                subtitle="Make room for the little things."
+                action={
+                  <button
+                    className="icon-button"
+                    aria-label="New Side Quest"
+                    onClick={() => newGoal("side")}
+                  >
+                    <Plus size={23} />
+                  </button>
+                }
+              />
+              {data.goals.some(
+                (g) =>
+                  g.type === "side" && !g.deleted && g.status !== "archived",
+              ) ? (
+                <>
+                  <div className="quest-mode">
+                    <span>
+                      {data.settings.mode === "focus"
+                        ? "Focus Mode"
+                        : "Balanced Mode"}
+                    </span>
+                    <button
+                      className="text-link"
+                      onClick={() => navigate("budget")}
+                    >
+                      Adjust funding
+                    </button>
+                  </div>
+                  {(["active", "wishlist", "paused", "completed"] as const).map(
+                    (status) => {
+                      const goals = data.goals
+                        .filter(
+                          (g) =>
+                            g.type === "side" &&
+                            g.status === status &&
+                            !g.deleted,
+                        )
+                        .sort((a, b) => a.priority - b.priority);
+                      return goals.length ? (
+                        <Section
+                          key={status}
+                          title={
+                            {
+                              active: "Saving for",
+                              wishlist: "Your wishlist",
+                              paused: "On pause",
+                              completed: "Completed",
+                            }[status]
+                          }
+                        >
+                          {goals.map((g) => (
+                            <GoalRow
+                              key={g.id}
+                              goal={g}
+                              balance={b[g.id]}
+                              currency={data.settings.currency}
+                              forecast={fc[g.id]}
+                              onClick={() => openGoal(g)}
+                            />
+                          ))}
+                        </Section>
+                      ) : null;
+                    },
+                  )}
+                  <Button secondary onClick={() => newGoal("side")}>
+                    <AddLabel>New Side Quest</AddLabel>
+                  </Button>
+                </>
+              ) : (
+                <Empty
+                  title="Little goals, big enjoyment"
+                  action={
+                    <Button onClick={() => newGoal("side")}>
+                      Add a Side Quest
+                    </Button>
+                  }
+                >
+                  A game, a getaway, a thoughtful gift. Start a wishlist or fund
+                  something now.
+                </Empty>
+              )}
+              {data.goals.some((g) => g.status === "archived" && !g.deleted) ? (
+                <Section title="Archived goals">
+                  {data.goals
+                    .filter((g) => g.status === "archived" && !g.deleted)
+                    .map((g) => (
+                      <GoalRow
+                        key={g.id}
+                        goal={g}
+                        balance={b[g.id]}
+                        currency={data.settings.currency}
+                        onClick={() => openGoal(g)}
+                      />
+                    ))}
+                </Section>
+              ) : null}
+            </>
+          ) : null}
+          {page === "goal" && goal ? (
+            <>
+              <PageTitle
+                title={goal.name}
+                onBack={() =>
+                  navigate(goal.type === "main" ? "home" : "quests")
+                }
+                action={
+                  <button
+                    className="icon-button"
+                    aria-label="Edit goal"
+                    onClick={() => {
+                      setEditing(goal);
+                      setGoalType(goal.type);
+                      setSheet("goal");
+                    }}
+                  >
+                    <Pencil size={20} />
+                  </button>
+                }
+              />
+              {goal.type === "main" ? (
+                <Ring
+                  saved={b[goal.id]}
+                  target={goal.target}
+                  currency={data.settings.currency}
+                />
+              ) : (
+                <div className="quest-detail">
+                  <strong>
+                    {money(b[goal.id], data.settings.currency, true)}
+                  </strong>
+                  <span>
+                    of {money(goal.target, data.settings.currency, true)}
+                  </span>
+                  <div className="progress-track">
+                    <span
+                      style={{
+                        width: `${Math.min(100, (b[goal.id] / goal.target) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              <ForecastRow
+                left={remaining(goal, b[goal.id])}
+                forecast={fc[goal.id]}
+                currency={data.settings.currency}
+              />
+              {goal.targetDate ? (
+                <p className="target-date">
+                  Your target: {shortDate(goal.targetDate, true)}
+                  {fc[goal.id]?.date && fc[goal.id].date! > goal.targetDate
+                    ? " · Current plan arrives later"
+                    : ""}
+                </p>
+              ) : null}
+              {goal.status !== "archived" ? (
+                <Button onClick={() => setSheet("transaction")}>
+                  Record savings or purchase
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    if (goal.type === "main" && main) {
+                      setToast(
+                        "Archive your current main goal before restoring another.",
+                      );
+                      return;
+                    }
+                    commit(
+                      {
+                        ...data,
+                        goals: data.goals.map((g) =>
+                          g.id === goal.id
+                            ? {
+                                ...g,
+                                status:
+                                  goal.type === "main" ? "active" : "paused",
+                              }
+                            : g,
+                        ),
+                      },
+                      "Goal restored",
+                    );
+                  }}
+                >
+                  Restore goal
+                </Button>
+              )}
+              {goal.type === "main" && goal.status !== "archived" ? (
+                <button
+                  className="text-link spaced"
+                  onClick={() => setPage("scenario")}
+                >
+                  What if I saved more?
+                </button>
+              ) : null}
+              <Section title="Contribution history">
+                <Activity
+                  data={data}
+                  goalId={goal.id}
+                  onSelect={setTx}
+                  limit={100000}
+                />
+              </Section>
+              <div className="goal-actions">
+                {goal.status !== "archived" ? (
+                  <button onClick={() => archive(goal)}>
+                    <Archive size={17} />
+                    Archive goal
+                  </button>
+                ) : null}
+                <button onClick={() => deleteGoal(goal)}>
+                  <Trash2 size={17} />
+                  Delete goal
+                </button>
+              </div>
+            </>
+          ) : null}
+          {page === "scenario" ? (
+            <>
+              <button
+                className="text-link spaced"
+                onClick={() => setPage("goal")}
+              >
+                <ArrowLeft size={16} />
+                Back to goal
+              </button>
+              <Budget
+                key={data.revision}
+                data={data}
+                commit={commit}
+                scenarioOnly
+              />
+            </>
+          ) : null}
+          {page === "budget" ? (
+            <Budget key={data.revision} data={data} commit={commit} />
+          ) : null}
+          {page === "settings" ? (
+            <SettingsPage
+              key={data.revision}
+              data={data}
+              commit={commit}
+              offlineReady={offlineReady}
+              online={online}
+              install={() => setSheet("install")}
+            />
+          ) : null}
+          {page === "activity" ? (
+            <>
+              <PageTitle title="All activity" onBack={() => navigate("home")} />
+              <Activity data={data} onSelect={setTx} limit={100000} />
+            </>
+          ) : null}
+        </main>
+      </div>
+      {toast ? (
+        <div role="status" className="toast" onClick={() => setToast("")}>
+          {toast}
+        </div>
+      ) : null}
+      {sheet === "goal" ? (
+        <GoalForm
+          data={data}
+          goal={editing}
+          type={goalType}
+          onClose={() => setSheet(null)}
+          commit={commit}
+        />
+      ) : null}
+      {sheet === "transaction" ? (
+        <TransactionForm
+          data={data}
+          goalId={selected || undefined}
+          onClose={() => setSheet(null)}
+          commit={commit}
+        />
+      ) : null}
+      {sheet === "payday" ? (
+        <PaydayForm
+          data={data}
+          commit={commit}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
+      {sheet === "install" ? (
+        <Modal title="Make yourself at home" onClose={() => setSheet(null)}>
+          <p>Open this website in Safari on your iPhone.</p>
+          <ol className="install-steps">
+            <li>Tap the Share button.</li>
+            <li>Choose Add to Home Screen.</li>
+            <li>Keep “Open as Web App” enabled and tap Add.</li>
+            <li>
+              Open Savings from its icon while online once. In Settings, check
+              “Ready to use offline.”
+            </li>
+          </ol>
+          <p className="fine-print">
+            After that, the downloaded app works without an internet connection.
+            No Xcode signing or weekly reinstall. Keep an exported backup of
+            your data.
+          </p>
+          <Button onClick={() => setSheet(null)}>Got it</Button>
+        </Modal>
+      ) : null}
+      {tx ? (
+        <Modal title="Activity details" onClose={() => setTx(null)}>
+          <p className="muted">
+            {shortDate(tx.date, true)} · {tx.kind}
+            {tx.voided ? " · Undone" : ""}
+          </p>
+          <h3>{tx.note || "Savings activity"}</h3>
+          <div className="detail-list">
+            {tx.entries.map((e, i) => (
+              <div key={i}>
+                <span>
+                  {data.goals.find((g) => g.id === e.goalId)?.name ||
+                    "Archived goal"}
+                </span>
+                <strong>
+                  {e.amount < 0 ? "−" : "+"}
+                  {money(Math.abs(e.amount), data.settings.currency)}
+                </strong>
+              </div>
+            ))}
+          </div>
+          {tx.kind === "payday" ? (
+            <p className="fine-print">
+              Paycheque: {money(tx.gross || 0, data.settings.currency)} ·
+              Giving: {money(tx.giving || 0, data.settings.currency)} ·
+              Expenses: {money(tx.expenses || 0, data.settings.currency)} ·
+              Available spending:{" "}
+              {money(tx.spending || 0, data.settings.currency)}
+            </p>
+          ) : null}
+          <p className="fine-print">
+            A tracking record only. No bank transfer was made.
+          </p>
+          {!tx.voided ? (
+            <Button
+              secondary
+              onClick={() => {
+                setConfirm({
+                  title: "Undo this record?",
+                  copy: "This reverses its effect on your goal balances and keeps the original activity visible as undone. It does not change your scheduled next payday.",
+                  action: "Undo record",
+                  run: () => {
+                    try {
+                      const next = voidTransaction(data, tx.id);
+                      if (commit(next, "Record undone")) {
+                        setConfirm(null);
+                        setTx(null);
+                      }
+                    } catch (e) {
+                      setToast((e as Error).message);
+                    }
+                  },
+                });
+                setTx(null);
+              }}
+            >
+              Undo record
+            </Button>
+          ) : null}
+        </Modal>
+      ) : null}
+      {confirm ? (
+        <Confirm
+          title={confirm.title}
+          action={confirm.action}
+          onClose={() => setConfirm(null)}
+          onConfirm={confirm.run}
+        >
+          {confirm.copy}
+        </Confirm>
+      ) : null}
+    </>
+  );
+}
