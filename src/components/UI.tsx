@@ -159,21 +159,21 @@ export function Ring({
         />
       </svg>
       <div className="ring-content">
-        <div className="ring-label">
-          <strong
-            className="ring-amount"
-            style={{ "--amount-width": amount.length * 0.62 } as CSSProperties}
-          >
-            {amount}
-          </strong>
-          <span
-            style={
-              { "--amount-width": goalAmount.length * 0.58 } as CSSProperties
-            }
-          >
-            {goalAmount}
-          </span>
-          <b>{Math.floor(pct)}% saved</b>
+        <div
+          className="ring-label"
+          style={{ "--amount-width": amount.length * 0.62 } as CSSProperties}
+        >
+          <strong className="ring-amount">{amount}</strong>
+          <div className="ring-caption">
+            <span
+              style={
+                { "--goal-width": goalAmount.length * 0.58 } as CSSProperties
+              }
+            >
+              {goalAmount}
+            </span>
+            <b>{Math.floor(pct)}% saved</b>
+          </div>
         </div>
       </div>
     </div>
