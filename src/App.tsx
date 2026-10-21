@@ -584,7 +584,6 @@ export default function App() {
           ) : null}
           {page === "settings" ? (
             <SettingsPage
-              key={data.revision}
               data={data}
               commit={commit}
               offlineReady={offlineReady}

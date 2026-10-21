@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Download,
   Upload,
@@ -16,6 +16,8 @@ import {
   validate,
   money,
   mainGoal,
+  validDate,
+  paydays,
 } from "../model";
 import type { AppUpdates } from "../useAppUpdates";
 import { incomeSplitFromPlan, dataWithIncomeSplit } from "../income";
@@ -23,6 +25,14 @@ import { SplitEditor } from "./SplitEditor";
 import { download, PREVIOUS } from "../storage";
 import { PageTitle, Section, Field, AmountInput, Button } from "./UI";
 import { type Commit, FormError, Confirm } from "./Forms";
+const incomeKeys = [
+  "frequency",
+  "nextPayday",
+  "firstDay",
+  "secondDay",
+  "monthlyDay",
+] as const;
+
 export function SettingsPage({
   data,
   commit,
@@ -46,11 +56,105 @@ export function SettingsPage({
     [split, setSplit] = useState(() => incomeSplitFromPlan(data)),
     [splitChanged, setSplitChanged] = useState(false),
     [error, setError] = useState(""),
+    [incomeError, setIncomeError] = useState(""),
+    [incomeSaved, setIncomeSaved] = useState(false),
     [incoming, setIncoming] = useState<Data | null>(null),
     [backupLabel, setBackupLabel] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const update = (key: keyof Settings, value: unknown) =>
-    setDraft((s) => ({ ...s, [key]: value }));
+  const previousData = useRef(data);
+  // A saved income change must not erase an unrelated allocation draft.
+  useEffect(() => {
+    const previous = previousData.current;
+    if (previous === data) return;
+    previousData.current = data;
+    setDraft(
+      (current) =>
+        Object.fromEntries(
+          Object.entries(data.settings).map(([key, value]) => [
+            key,
+            current[key as keyof Settings] ===
+            previous.settings[key as keyof Settings]
+              ? value
+              : current[key as keyof Settings],
+          ]),
+        ) as unknown as Settings,
+    );
+    setIncome((current) =>
+      current === String(previous.settings.income / 100)
+        ? String(data.settings.income / 100)
+        : current,
+    );
+    setExpenses((current) =>
+      current === String(previous.settings.expenses / 100)
+        ? String(data.settings.expenses / 100)
+        : current,
+    );
+    if (!splitChanged) setSplit(incomeSplitFromPlan(data));
+  }, [data, splitChanged]);
+  function resetDrafts(next: Data) {
+    setDraft({ ...next.settings });
+    setIncome(String(next.settings.income / 100));
+    setExpenses(String(next.settings.expenses / 100));
+    setSplit(incomeSplitFromPlan(next));
+    setSplitChanged(false);
+    setError("");
+    setIncomeError("");
+    setIncomeSaved(false);
+  }
+  const update = (key: keyof Settings, value: unknown) => {
+    if (incomeKeys.some((k) => k === key)) {
+      setIncomeError("");
+      setIncomeSaved(false);
+    }
+    setDraft((s) => {
+      let next = { ...s, [key]: value };
+      if (key === "frequency" && value === "monthly" && validDate(s.nextPayday))
+        next.monthlyDay = Number(s.nextPayday.slice(-2));
+      if (
+        ["frequency", "monthlyDay", "firstDay", "secondDay"].includes(key) &&
+        validDate(next.nextPayday)
+      ) {
+        const validDays =
+          next.frequency === "monthly"
+            ? Number.isInteger(next.monthlyDay) &&
+              next.monthlyDay >= 1 &&
+              next.monthlyDay <= 31
+            : next.frequency === "semimonthly"
+              ? Number.isInteger(next.firstDay) &&
+                next.firstDay >= 1 &&
+                next.firstDay <= 27 &&
+                Number.isInteger(next.secondDay) &&
+                next.secondDay > next.firstDay &&
+                next.secondDay <= 31
+              : true;
+        if (validDays)
+          next = {
+            ...next,
+            nextPayday: paydays(next, 1, next.nextPayday)[0] || next.nextPayday,
+          };
+      }
+      return next;
+    });
+  };
+  function saveIncome() {
+    try {
+      const settings = { ...data.settings, income: cents(income) };
+      for (const key of incomeKeys)
+        Object.assign(settings, { [key]: draft[key] });
+      const next = validate({ ...data, settings });
+      if (commit(next, "Income saved · budget and forecasts updated")) {
+        setIncome(String(settings.income / 100));
+        setIncomeError("");
+        setIncomeSaved(true);
+      } else
+        setIncomeError(
+          "Could not save your income. Reopen Settings to use the latest plan.",
+        );
+    } catch (e) {
+      setIncomeError((e as Error).message);
+      setIncomeSaved(false);
+    }
+  }
   function submit(e: FormEvent) {
     e.preventDefault();
     try {
@@ -63,8 +167,13 @@ export function SettingsPage({
         ? dataWithIncomeSplit({ ...data, settings }, split)
         : { ...data, settings };
       validate(next);
-      if (commit(next, "Settings and income split saved")) setError("");
-      else
+      if (commit(next, "Settings and income split saved")) {
+        setError("");
+        setIncomeError("");
+        setIncomeSaved(true);
+        setSplit(incomeSplitFromPlan(next));
+        setSplitChanged(false);
+      } else
         setError(
           "Could not save. Check device storage or reload if another tab changed this plan.",
         );
@@ -84,18 +193,24 @@ export function SettingsPage({
     }
   }
   let previewIncome = 0,
-    previewExpenses = 0;
+    previewExpenses = 0,
+    incomeValid = true;
   try {
     previewIncome = cents(income);
   } catch {
-    /* The form validates on save. */
+    incomeValid = false;
   }
   try {
     previewExpenses = cents(expenses);
   } catch {
     /* The form validates on save. */
   }
+  const incomeChanged =
+    !incomeValid ||
+    previewIncome !== data.settings.income ||
+    incomeKeys.some((key) => draft[key] !== data.settings[key]);
   const unsaved =
+    !incomeValid ||
     JSON.stringify(draft) !== JSON.stringify(data.settings) ||
     !income ||
     previewIncome !== data.settings.income ||
@@ -124,7 +239,11 @@ export function SettingsPage({
           >
             <AmountInput
               value={income}
-              onChange={setIncome}
+              onChange={(value) => {
+                setIncome(value);
+                setIncomeError("");
+                setIncomeSaved(false);
+              }}
               label="Paycheque amount"
             />
           </Field>
@@ -184,6 +303,8 @@ export function SettingsPage({
               value={draft.nextPayday}
               onInput={(e) => {
                 const value = e.currentTarget.value;
+                setIncomeError("");
+                setIncomeSaved(false);
                 setDraft((s) => ({
                   ...s,
                   nextPayday: value,
@@ -194,6 +315,8 @@ export function SettingsPage({
               }}
               onChange={(e) => {
                 const value = e.target.value;
+                setIncomeError("");
+                setIncomeSaved(false);
                 setDraft((s) => ({
                   ...s,
                   nextPayday: value,
@@ -212,6 +335,21 @@ export function SettingsPage({
               draft.currency,
             )}{" "}
             a month on average.
+          </p>
+          <FormError error={incomeError} />
+          <Button onClick={saveIncome} disabled={!incomeChanged}>
+            Save income
+          </Button>
+          <p
+            className="fine-print income-save-status"
+            role="status"
+            aria-live="polite"
+          >
+            {incomeChanged
+              ? "Unsaved income changes. Save to update your budget and goal dates everywhere."
+              : incomeSaved
+                ? "Income saved. Budget and goal dates are up to date."
+                : "Your saved income is used throughout the app."}
           </p>
         </Section>
         <Section title="Your income split">
@@ -415,8 +553,10 @@ export function SettingsPage({
                 { ...incoming, revision: data.revision },
                 "Backup restored",
               )
-            )
+            ) {
+              resetDrafts(incoming);
               setIncoming(null);
+            }
           }}
         >
           This replaces the plan on this device with {incoming.goals.length}{" "}
