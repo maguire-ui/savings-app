@@ -6,6 +6,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   RefreshCw,
+  Wallet,
+  SlidersHorizontal,
+  SunMoon,
 } from "lucide-react";
 import {
   type Data,
@@ -23,7 +26,7 @@ import type { AppUpdates } from "../useAppUpdates";
 import { incomeSplitFromPlan, dataWithIncomeSplit } from "../income";
 import { SplitEditor } from "./SplitEditor";
 import { download, PREVIOUS } from "../storage";
-import { PageTitle, Section, Field, AmountInput, Button } from "./UI";
+import { PageTitle, Field, AmountInput, Button, MenuRow } from "./UI";
 import { type Commit, FormError, Confirm } from "./Forms";
 const incomeKeys = [
   "frequency",
@@ -33,6 +36,9 @@ const incomeKeys = [
   "monthlyDay",
 ] as const;
 
+export type SettingsView =
+  "menu" | "income" | "split" | "display" | "backups" | "updates";
+
 export function SettingsPage({
   data,
   commit,
@@ -41,6 +47,8 @@ export function SettingsPage({
   install,
   updates,
   applyUpdate,
+  view,
+  onViewChange,
 }: {
   data: Data;
   commit: Commit;
@@ -49,6 +57,8 @@ export function SettingsPage({
   install: () => void;
   updates: AppUpdates;
   applyUpdate: () => void;
+  view: SettingsView;
+  onViewChange: (view: SettingsView) => void;
 }) {
   const [draft, setDraft] = useState<Settings>({ ...data.settings }),
     [income, setIncome] = useState(String(data.settings.income / 100)),
@@ -142,7 +152,7 @@ export function SettingsPage({
       for (const key of incomeKeys)
         Object.assign(settings, { [key]: draft[key] });
       const next = validate({ ...data, settings });
-      if (commit(next, "Income saved · budget and forecasts updated")) {
+      if (commit(next, "Income saved")) {
         setIncome(String(settings.income / 100));
         setIncomeError("");
         setIncomeSaved(true);
@@ -159,18 +169,17 @@ export function SettingsPage({
     e.preventDefault();
     try {
       const settings = {
-        ...draft,
-        income: cents(income),
+        ...data.settings,
+        giving: draft.giving,
         expenses: cents(expenses),
       };
       const next = splitChanged
         ? dataWithIncomeSplit({ ...data, settings }, split)
         : { ...data, settings };
       validate(next);
-      if (commit(next, "Settings and income split saved")) {
+      if (commit(next, "Split saved")) {
         setError("");
         setIncomeError("");
-        setIncomeSaved(true);
         setSplit(incomeSplitFromPlan(next));
         setSplitChanged(false);
       } else
@@ -180,6 +189,28 @@ export function SettingsPage({
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+  function saveDisplay(e: FormEvent) {
+    e.preventDefault();
+    try {
+      const next = validate({
+        ...data,
+        settings: {
+          ...data.settings,
+          currency: draft.currency,
+          appearance: draft.appearance,
+        },
+      });
+      if (commit(next, "Appearance saved")) setError("");
+      else setError("Could not save. Try again.");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  function go(next: SettingsView) {
+    setError("");
+    onViewChange(next);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
   const periods = { weekly: 52, biweekly: 26, semimonthly: 24, monthly: 12 }[
     draft.frequency
@@ -194,7 +225,8 @@ export function SettingsPage({
   }
   let previewIncome = 0,
     previewExpenses = 0,
-    incomeValid = true;
+    incomeValid = true,
+    expensesValid = true;
   try {
     previewIncome = cents(income);
   } catch {
@@ -203,7 +235,7 @@ export function SettingsPage({
   try {
     previewExpenses = cents(expenses);
   } catch {
-    /* The form validates on save. */
+    expensesValid = false;
   }
   const incomeChanged =
     !incomeValid ||
@@ -228,15 +260,88 @@ export function SettingsPage({
         : updates.needRefresh
           ? "Update now"
           : "Check for updates";
+  const displayChanged =
+    draft.currency !== data.settings.currency ||
+    draft.appearance !== data.settings.appearance;
+  const splitDirty =
+    !expensesValid ||
+    draft.giving !== data.settings.giving ||
+    previewExpenses !== data.settings.expenses ||
+    (splitChanged &&
+      JSON.stringify(split) !== JSON.stringify(incomeSplitFromPlan(data)));
+  const titles: Record<SettingsView, string> = {
+    menu: "Settings",
+    income: "Income",
+    split: "Money split",
+    display: "Appearance",
+    backups: "Backups",
+    updates: "App updates",
+  };
+  const frequency = {
+    weekly: "Weekly",
+    biweekly: "Every 2 weeks",
+    semimonthly: "Twice a month",
+    monthly: "Monthly",
+  }[data.settings.frequency];
   return (
     <>
-      <PageTitle title="Settings" />
-      <form onSubmit={submit}>
-        <Section title="Income & paydays">
-          <Field
-            label="Expected paycheque"
-            hint="Amount for one payday. Set the frequency below to match when you are paid."
-          >
+      <PageTitle
+        title={titles[view]}
+        onBack={view !== "menu" ? () => go("menu") : undefined}
+      />
+      {view === "menu" ? (
+        <div className="settings-menu">
+          <MenuRow
+            icon={<Wallet size={21} />}
+            label="Income"
+            detail={
+              incomeChanged
+                ? "Unsaved changes"
+                : `${money(data.settings.income, data.settings.currency, true)} · ${frequency}`
+            }
+            onClick={() => go("income")}
+          />
+          <MenuRow
+            icon={<SlidersHorizontal size={21} />}
+            label="Money split"
+            detail={
+              splitDirty ? "Unsaved changes" : "Savings, spending & tithing"
+            }
+            onClick={() => go("split")}
+          />
+          <MenuRow
+            icon={<SunMoon size={21} />}
+            label="Appearance"
+            detail={
+              displayChanged
+                ? "Unsaved changes"
+                : `${{ system: "System", light: "Light", dark: "Dark" }[data.settings.appearance]} · ${data.settings.currency}`
+            }
+            onClick={() => go("display")}
+          />
+          <MenuRow
+            icon={<ShieldCheck size={21} />}
+            label="Backups"
+            detail="Saved on this device"
+            onClick={() => go("backups")}
+          />
+          <MenuRow
+            icon={<RefreshCw size={21} />}
+            label="App updates"
+            detail={updates.needRefresh ? "Update ready" : __APP_VERSION__}
+            onClick={() => go("updates")}
+          />
+        </div>
+      ) : null}
+      {view === "income" ? (
+        <form
+          className="settings-panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveIncome();
+          }}
+        >
+          <Field label="Pay amount">
             <AmountInput
               value={income}
               onChange={(value) => {
@@ -247,20 +352,20 @@ export function SettingsPage({
               label="Paycheque amount"
             />
           </Field>
-          <Field label="Pay frequency">
+          <Field label="Paid">
             <select
               value={draft.frequency}
               onChange={(e) => update("frequency", e.target.value as Frequency)}
             >
-              <option value="weekly">Weekly — every 7 days</option>
-              <option value="biweekly">Biweekly — every 14 days</option>
-              <option value="semimonthly">Twice monthly — two dates</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Every 2 weeks</option>
+              <option value="semimonthly">Twice a month</option>
               <option value="monthly">Monthly</option>
             </select>
           </Field>
           {draft.frequency === "semimonthly" ? (
             <div className="form-grid">
-              <Field label="First payday (day 1–27)">
+              <Field label="First day (1–27)">
                 <input
                   type="number"
                   min="1"
@@ -269,7 +374,7 @@ export function SettingsPage({
                   onChange={(e) => update("firstDay", Number(e.target.value))}
                 />
               </Field>
-              <Field label="Second payday (day 2–31)">
+              <Field label="Second day (2–31)">
                 <input
                   type="number"
                   min="2"
@@ -281,10 +386,7 @@ export function SettingsPage({
             </div>
           ) : null}
           {draft.frequency === "monthly" ? (
-            <Field
-              label="Monthly payday (day 1–31)"
-              hint="For short months, days 29–31 use the last day of the month."
-            >
+            <Field label="Payday (1–31)" hint="Short months use the last day.">
               <input
                 type="number"
                 min="1"
@@ -294,10 +396,7 @@ export function SettingsPage({
               />
             </Field>
           ) : null}
-          <Field
-            label="Next payday"
-            hint="Used for forecasts. Record your actual earnings from Home."
-          >
+          <Field label="Next payday">
             <input
               type="date"
               value={draft.nextPayday}
@@ -334,10 +433,10 @@ export function SettingsPage({
               ),
               draft.currency,
             )}{" "}
-            a month on average.
+            / month on average
           </p>
           <FormError error={incomeError} />
-          <Button onClick={saveIncome} disabled={!incomeChanged}>
+          <Button type="submit" disabled={!incomeChanged}>
             Save income
           </Button>
           <p
@@ -345,20 +444,18 @@ export function SettingsPage({
             role="status"
             aria-live="polite"
           >
-            {incomeChanged
-              ? "Unsaved income changes. Save to update your budget and goal dates everywhere."
-              : incomeSaved
-                ? "Income saved. Budget and goal dates are up to date."
-                : "Your saved income is used throughout the app."}
+            {incomeChanged ? "Unsaved changes" : incomeSaved ? "Saved" : ""}
           </p>
-        </Section>
-        <Section title="Your income split">
+        </form>
+      ) : null}
+      {view === "split" ? (
+        <form className="settings-panel" onSubmit={submit}>
           <SplitEditor
             data={{
               ...data,
               settings: {
-                ...draft,
-                income: previewIncome,
+                ...data.settings,
+                giving: draft.giving,
                 expenses: previewExpenses,
               },
             }}
@@ -372,172 +469,174 @@ export function SettingsPage({
             expenses={expenses}
             onExpensesChange={setExpenses}
           />
-          <p className="fine-print">
-            Applies to future income. Existing balances stay the same.
-          </p>
           {mainGoal(data) ? (
-            <Button type="submit" disabled={Boolean(splitError)}>
-              Save income split
+            <Button type="submit" disabled={!splitDirty || Boolean(splitError)}>
+              Save split
             </Button>
           ) : null}
-        </Section>
-        <Section title="Preferences">
-          <Field
-            label="Currency"
-            hint="Changes formatting only. Existing amounts are not converted."
-          >
+
+          <FormError error={error} />
+        </form>
+      ) : null}
+      {view === "display" ? (
+        <form className="settings-panel" onSubmit={saveDisplay}>
+          <Field label="Display currency">
             <select
               value={draft.currency}
               onChange={(e) => update("currency", e.target.value)}
             >
-              <option value="CAD">Canadian dollar · CAD</option>
-              <option value="USD">US dollar · USD</option>
-              <option value="EUR">Euro · EUR</option>
-              <option value="GBP">British pound · GBP</option>
+              <option value="CAD">CAD</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
             </select>
           </Field>
-          <Field label="Appearance">
+          <Field label="Theme">
             <select
               value={draft.appearance}
               onChange={(e) => update("appearance", e.target.value)}
             >
-              <option value="system">Match your iPhone</option>
+              <option value="system">System</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
           </Field>
           <FormError error={error} />
-          <Button type="submit" disabled={Boolean(splitError)}>
-            Save settings
+          <Button type="submit" disabled={!displayChanged}>
+            Save appearance
           </Button>
-        </Section>
-      </form>
-      <Section title="App updates">
-        <div className="status-row">
-          <RefreshCw size={21} />
-          <div>
-            <strong>Savings {__APP_VERSION__}</strong>
-            <small role="status" aria-live="polite">
-              {updates.status === "applying"
-                ? "Opening the update…"
-                : updates.status === "checking"
-                  ? "Checking for updates…"
-                  : updates.status === "error" || updates.status === "offline"
-                    ? updates.message
-                    : updates.needRefresh
-                      ? "An update is ready. Your saved plan stays here."
-                      : updates.status === "current"
-                        ? "You’re up to date."
-                        : updates.message ||
-                          "Updates install here. Keep your Home Screen app."}
-            </small>
+        </form>
+      ) : null}
+      {view === "updates" ? (
+        <div className="settings-panel">
+          <div className="status-row">
+            <RefreshCw size={21} />
+            <div>
+              <strong>Version {__APP_VERSION__}</strong>
+              <small role="status" aria-live="polite">
+                {updates.status === "applying"
+                  ? "Updating…"
+                  : updates.status === "checking"
+                    ? "Checking…"
+                    : updates.status === "error" || updates.status === "offline"
+                      ? updates.message
+                      : updates.needRefresh
+                        ? "Update ready"
+                        : updates.status === "current"
+                          ? "Up to date"
+                          : updates.message || ""}
+              </small>
+            </div>
           </div>
-        </div>
-        {updates.needRefresh && unsaved ? (
-          <p className="fine-print">Save your settings before updating.</p>
-        ) : null}
-        <Button
-          secondary={!updates.needRefresh}
-          disabled={updateBusy || (updates.needRefresh && unsaved)}
-          onClick={() =>
-            updates.needRefresh ? applyUpdate() : void updates.checkForUpdates()
-          }
-        >
-          {updateLabel}
-        </Button>
-      </Section>
-      <Section title="On your iPhone">
-        <div className="status-row">
-          <Smartphone size={21} />
-          <div>
-            <strong>
-              {offlineReady
-                ? "Ready to use offline"
-                : "Preparing offline access"}
-            </strong>
-            <small>
-              {online ? "Online" : "You’re offline"}
-              {!offlineReady ? " · Connect to download the app." : ""}
-            </small>
-          </div>
-          {offlineReady ? <CheckCircle2 size={19} /> : null}
-        </div>
-        <Button secondary onClick={install}>
-          Home Screen instructions
-        </Button>
-      </Section>
-      <Section title="Your data">
-        <div className="status-row">
-          <ShieldCheck size={21} />
-          <div>
-            <strong>Saved on this device</strong>
-            <small>
-              Your saved plan stays here between visits and app updates.
-            </small>
-          </div>
-        </div>
-        <p className="fine-print">
-          Keep a backup before switching devices, moving from Safari to the Home
-          Screen app, or clearing website data. There’s no cloud sync.
-        </p>
-        <div className="button-stack">
+          {updates.needRefresh && unsaved ? (
+            <p className="fine-print">Save changes first.</p>
+          ) : null}
           <Button
-            secondary
+            secondary={!updates.needRefresh}
+            disabled={updateBusy || (updates.needRefresh && unsaved)}
+            onClick={() =>
+              updates.needRefresh
+                ? applyUpdate()
+                : void updates.checkForUpdates()
+            }
+          >
+            {updateLabel}
+          </Button>
+
+          {unsaved ? (
+            <Button
+              secondary
+              onClick={() =>
+                go(incomeChanged ? "income" : splitDirty ? "split" : "display")
+              }
+            >
+              Review changes
+            </Button>
+          ) : null}
+          <div className="settings-secondary">
+            <div className="status-row">
+              <Smartphone size={21} />
+              <div>
+                <strong>
+                  {offlineReady ? "Offline ready" : "Preparing offline access…"}
+                </strong>
+                <small>
+                  {online ? "Online" : "You’re offline"}
+                  {!offlineReady ? " · Connect to prepare" : ""}
+                </small>
+              </div>
+              {offlineReady ? <CheckCircle2 size={19} /> : null}
+            </div>
+            <Button secondary onClick={install}>
+              Add to Home Screen
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {view === "backups" ? (
+        <div className="settings-panel">
+          <p className="section-description">On this device. No cloud sync.</p>
+          <div className="button-stack">
+            <Button
+              secondary
+              onClick={() => {
+                download(
+                  JSON.stringify(data, null, 2),
+                  `savings-backup-${today()}.json`,
+                );
+                setBackupLabel("Backup downloaded");
+              }}
+            >
+              <Download size={17} />
+              Export backup
+            </Button>
+            <Button secondary onClick={() => fileRef.current?.click()}>
+              <Upload size={17} />
+              Restore backup
+            </Button>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            className="visually-hidden"
+            aria-label="Import Savings backup"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                if (file.size > 5_000_000)
+                  throw Error("Choose a backup smaller than 5 MB.");
+                setIncoming(validate(JSON.parse(await file.text())));
+              } catch (err) {
+                setError((err as Error).message);
+              }
+              e.target.value = "";
+            }}
+          />
+          <button
+            className="text-link spaced"
             onClick={() => {
-              download(
-                JSON.stringify(data, null, 2),
-                `savings-backup-${today()}.json`,
-              );
-              setBackupLabel("Backup download requested. Save it in Files.");
+              try {
+                const raw = localStorage.getItem(PREVIOUS);
+                if (!raw) throw Error("There is no previous save yet.");
+                setIncoming(validate(JSON.parse(raw)));
+              } catch (err) {
+                setError((err as Error).message);
+              }
             }}
           >
-            <Download size={17} />
-            Export backup
-          </Button>
-          <Button secondary onClick={() => fileRef.current?.click()}>
-            <Upload size={17} />
-            Restore a backup
-          </Button>
+            Previous save
+          </button>
+          {backupLabel ? (
+            <p className="success-note" role="status">
+              {backupLabel}
+            </p>
+          ) : null}
+
+          <FormError error={error} />
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          className="visually-hidden"
-          aria-label="Import Savings backup"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              if (file.size > 5_000_000)
-                throw Error("Choose a backup smaller than 5 MB.");
-              setIncoming(validate(JSON.parse(await file.text())));
-            } catch (err) {
-              setError((err as Error).message);
-            }
-            e.target.value = "";
-          }}
-        />
-        <button
-          className="text-link spaced"
-          onClick={() => {
-            try {
-              const raw = localStorage.getItem(PREVIOUS);
-              if (!raw) throw Error("There is no previous save yet.");
-              setIncoming(validate(JSON.parse(raw)));
-            } catch (err) {
-              setError((err as Error).message);
-            }
-          }}
-        >
-          Recover previous save
-        </button>
-        {backupLabel ? (
-          <p className="success-note" role="status">
-            {backupLabel}
-          </p>
-        ) : null}
-      </Section>
+      ) : null}
       {incoming ? (
         <Confirm
           title="Restore this backup?"
@@ -559,9 +658,9 @@ export function SettingsPage({
             }
           }}
         >
-          This replaces the plan on this device with {incoming.goals.length}{" "}
-          goals and {incoming.transactions.length} activity records. Your
-          current plan will download as a safety backup first.
+          Replace this plan with {incoming.goals.length} goals and{" "}
+          {incoming.transactions.length} records? A safety backup downloads
+          first.
         </Confirm>
       ) : null}
     </>

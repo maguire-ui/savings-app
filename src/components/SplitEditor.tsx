@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Heart, ReceiptText } from "lucide-react";
 import { type Data, budget, mainGoal, money, percent } from "../model";
 import {
@@ -23,6 +24,7 @@ export function SplitEditor({
   expenses: string;
   onExpensesChange: (amount: string) => void;
 }) {
+  const [showExpenses, setShowExpenses] = useState(data.settings.expenses > 0);
   const main = mainGoal(data),
     quests = incomeQuests(data);
   const total =
@@ -48,8 +50,8 @@ export function SplitEditor({
     {
       kind: "main",
       key: "main",
-      name: "Main goal savings",
-      detail: main?.name || "Create your main goal first",
+      name: "Main goal",
+      detail: main?.name || "",
       icon: main?.icon || "target",
       value: split.main,
       amount: plan?.entries.find((e) => e.goalId === main?.id)?.amount || 0,
@@ -67,7 +69,7 @@ export function SplitEditor({
       kind: "fun",
       key: "fun",
       name: "Spending",
-      detail: "Your fun money",
+      detail: "",
       icon: "shopping",
       value: split.fun,
       amount: plan?.fun || 0,
@@ -75,10 +77,7 @@ export function SplitEditor({
   ];
   return (
     <div className="split-editor">
-      <p className="section-description">
-        Tithing comes from your full pay first. Divide what is left between your
-        goals and spending.
-      </p>
+      <p className="section-description">Tithing first. Split the rest.</p>
       <div className="split-income-base">
         <span>Expected pay</span>
         <strong>{money(data.settings.income, data.settings.currency)}</strong>
@@ -90,7 +89,7 @@ export function SplitEditor({
           </span>
           <span className="split-editor-name">
             <strong>Tithing</strong>
-            <small>{percent(data.settings.giving)} of your full pay</small>
+            <small>Of full pay</small>
           </span>
           <span className="split-editor-control">
             <span className="percent-control">
@@ -104,38 +103,34 @@ export function SplitEditor({
             <small>{money(deductions.giving, data.settings.currency)}</small>
           </span>
         </div>
-        <div className="split-editor-row">
-          <span className="split-editor-icon">
-            <ReceiptText size={20} strokeWidth={1.7} />
-          </span>
-          <span className="split-editor-name">
-            <strong>Expenses</strong>
-            <small>Amount per payday</small>
-          </span>
-          <span className="split-editor-control split-expense-control">
-            <AmountInput
-              label="Planned expenses"
-              value={expenses}
-              onChange={onExpensesChange}
-            />
-          </span>
-        </div>
+        <details
+          className="compact-options split-expenses"
+          open={showExpenses}
+          onToggle={(e) => setShowExpenses(e.currentTarget.open)}
+        >
+          <summary>Expenses (optional)</summary>
+          <div className="split-editor-row">
+            <span className="split-editor-icon">
+              <ReceiptText size={20} strokeWidth={1.7} />
+            </span>
+            <span className="split-editor-name">
+              <strong>Expenses</strong>
+              <small>Amount per payday</small>
+            </span>
+            <span className="split-editor-control split-expense-control">
+              <AmountInput
+                label="Planned expenses"
+                value={expenses}
+                onChange={onExpensesChange}
+              />
+            </span>
+          </div>
+        </details>
       </div>
       <div className="split-preview-base" aria-live="polite">
-        <span>
-          {money(data.settings.income, data.settings.currency)} pay −{" "}
-          {money(deductions.giving, data.settings.currency)} tithing
-          {deductions.expenses > 0
-            ? ` − ${money(deductions.expenses, data.settings.currency)} expenses`
-            : ""}
-        </span>
         <strong>
-          {money(deductions.available, data.settings.currency)} to divide
+          {money(deductions.available, data.settings.currency)} to split
         </strong>
-        <span>
-          Savings, Side Quests and spending below are percentages of this
-          amount.
-        </span>
       </div>
       {main ? (
         <>
@@ -147,7 +142,7 @@ export function SplitEditor({
                 </span>
                 <span className="split-editor-name">
                   <strong>{row.name}</strong>
-                  <small>{row.detail}</small>
+                  {row.detail ? <small>{row.detail}</small> : null}
                   <small className="split-row-basis">
                     {percent(row.value)} of{" "}
                     {money(deductions.available, data.settings.currency)}
@@ -156,7 +151,11 @@ export function SplitEditor({
                 <span className="split-editor-control">
                   <span className="percent-control">
                     <PercentInput
-                      label={`${row.kind === "side" ? "Side Quest " : ""}${row.name} percentage`}
+                      label={
+                        row.kind === "main"
+                          ? "Main goal savings percentage"
+                          : `${row.kind === "side" ? "Side Quest " : ""}${row.name} percentage`
+                      }
                       value={row.value}
                       onChange={(value) =>
                         onChange(
@@ -184,42 +183,17 @@ export function SplitEditor({
             className={`split-total ${error ? "invalid" : ""}`}
             aria-live="polite"
           >
-            <span>Remaining split</span>
-            <strong>{Number(total.toFixed(6))}% / 100%</strong>
+            <span>Total</span>
+            <strong>{Number(total.toFixed(6))}%</strong>
           </p>
           {error ? (
             <p className="form-error" role="alert">
               {error}
             </p>
           ) : null}
-          {quests.length === 0 ? (
-            <p className="fine-print">
-              Add a Side Quest from the Side Quests tab to give it a percentage
-              here.
-            </p>
-          ) : null}
-          <p className="fine-print">
-            Completed Side Quests return extra and future funding to your main
-            goal. Assigning a share funds a wishlist or paused quest when saved.
-          </p>
-          {plan ? (
-            <p className="split-accounted">
-              {money(
-                plan.tithing +
-                  plan.expenses +
-                  plan.fun +
-                  plan.entries.reduce((sum, e) => sum + e.amount, 0),
-                data.settings.currency,
-              )}{" "}
-              of {money(plan.gross, data.settings.currency)} accounted for,
-              including tithing{plan.expenses > 0 ? " and expenses" : ""}.
-            </p>
-          ) : null}
         </>
       ) : (
-        <p className="fine-print">
-          Create your main goal on Home to divide your remaining pay.
-        </p>
+        <p className="fine-print">Add a main goal first.</p>
       )}
     </div>
   );

@@ -1720,3 +1720,115 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.6;
   margin: 18px 0 0;
 }
+
+/* Focused settings and planning screens. */
+.menu-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 82px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.menu-row-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--accent);
+}
+.menu-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.menu-row-label strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.menu-row-label small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.menu-row > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.settings-menu {
+  border-top: 1px solid var(--line);
+}
+.settings-secondary,
+.budget-tools {
+  margin-top: 30px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.settings-panel > .button-secondary + .button-secondary {
+  margin-top: 12px;
+}
+.compact-options {
+  margin: 10px 0 22px;
+}
+.compact-options > summary {
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+}
+.compact-options[open] > summary {
+  margin-bottom: 16px;
+}
+.split-expenses {
+  margin: 0;
+}
+.split-expenses > summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+.split-expenses[open] > summary {
+  margin-bottom: 0;
+}
+.split-expenses .split-editor-row {
+  border-top: 0;
+  padding-top: 8px;
+}
+.settings-panel .split-editor > .section-description {
+  margin-bottom: 10px;
+}
+.settings-panel .split-editor-row {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.settings-panel .split-preview-base {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.simple-breakdown {
+  margin-top: 18px;
+}
+.simple-breakdown > div > strong {
+  width: auto;
+}
+.budget-options {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 6px;
+}
+.budget-tools {
+  padding-top: 0;
+}
+.split-editor-control > small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}

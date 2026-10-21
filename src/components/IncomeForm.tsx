@@ -70,7 +70,7 @@ export function IncomeForm({
         rememberSplit: remember,
         scheduledPayday: scheduled && day === data.settings.nextPayday,
       });
-      if (commit(next, "Income recorded · your goals are updated")) onClose();
+      if (commit(next, "Income recorded")) onClose();
       else {
         saving.current = false;
         setError(
@@ -149,17 +149,12 @@ export function IncomeForm({
                 checked={scheduled}
                 onChange={(e) => setScheduled(e.target.checked)}
               />
-              <span>
-                This is my scheduled payday
-                <small>Advance the next payday after I confirm.</small>
-              </span>
+              <span>Advance next payday</span>
             </label>
           ) : null}
           <FormError error={error} />
           <Button type="submit">Show my split</Button>
-          <p className="fine-print">
-            Review your split before anything is recorded.
-          </p>
+          <p className="fine-print">Review before saving.</p>
         </form>
       ) : (
         <form onSubmit={confirm}>
@@ -241,7 +236,7 @@ export function IncomeForm({
                 <Wallet size={20} strokeWidth={1.7} />
               </span>
               <span className="income-destination-name">
-                <strong>Fun money</strong>
+                <strong>Spending</strong>
                 <small>
                   {percent(split.fun)} of {money(deduction.available, currency)}{" "}
                   · spending
@@ -254,28 +249,23 @@ export function IncomeForm({
           </div>
           {capped ? (
             <p className="fine-print">
-              A Side Quest reaches its target with this income. Its extra money
-              goes to your main goal.
+              Quest funded. Extra goes to your main goal.
             </p>
-          ) : null}
-          <p className="income-base">
-            Percentages apply to the amount left after tithing
-            {data.settings.expenses > 0 ? " and expenses" : ""}.
-          </p>
-          {quests.length ? (
-            <button
-              type="button"
-              className="income-preset"
-              onClick={() => {
-                setSplit(exampleIncomeSplit(data));
-                setError("");
-              }}
-            >
-              Use 50 / 30 / 20<span>Main goal · Side Quests · fun</span>
-            </button>
           ) : null}
           <details className="income-custom">
             <summary>Adjust percentages</summary>
+            {quests.length ? (
+              <button
+                type="button"
+                className="income-preset"
+                onClick={() => {
+                  setSplit(exampleIncomeSplit(data));
+                  setError("");
+                }}
+              >
+                50 / 30 / 20<span>Main · quests · spending</span>
+              </button>
+            ) : null}
             <div className="income-share-list">
               <Field label="Main goal (%)">
                 <input
@@ -311,7 +301,7 @@ export function IncomeForm({
                   />
                 </Field>
               ))}
-              <Field label="Fun money (%)">
+              <Field label="Spending (%)">
                 <input
                   type="number"
                   min="0"
@@ -322,10 +312,7 @@ export function IncomeForm({
                 />
               </Field>
             </div>
-            <p className="fine-print">
-              Add up to 100%. A positive share can fund a wishlist or paused
-              Side Quest for this income.
-            </p>
+            <p className="fine-print">Must total 100%.</p>
           </details>
           <label className="check-row">
             <input
@@ -333,20 +320,14 @@ export function IncomeForm({
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
-            <span>
-              Use this split for future income
-              <small>Update my budget percentages when I confirm.</small>
-            </span>
+            <span>Save as my split</span>
           </label>
           <FormError error={error || (!plan ? planError : "")} />
           <Button type="submit" disabled={!plan}>
             <Check size={18} />
-            Confirm & record income
+            Record income
           </Button>
-          <p className="fine-print">
-            Set the money aside yourself. This records it without transferring
-            funds.
-          </p>
+          <p className="fine-print">Tracking only. Move the money yourself.</p>
         </form>
       )}
     </Modal>

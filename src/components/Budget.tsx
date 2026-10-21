@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TrendingUp, Utensils } from "lucide-react";
 import {
   type Data,
   type Settings,
@@ -7,7 +8,6 @@ import {
   balances,
   splitPool,
   money,
-  percent,
   mainGoal,
   remaining,
   foodEstimate,
@@ -21,18 +21,24 @@ import {
   ForecastRow,
   AmountInput,
   PercentInput,
+  MenuRow,
 } from "./UI";
 import { type Commit, FormError } from "./Forms";
 export function Budget({
   data,
   commit,
   scenarioOnly = false,
+  onEditSplit,
 }: {
   data: Data;
   commit: Commit;
   scenarioOnly?: boolean;
+  onEditSplit?: () => void;
 }) {
-  const [draft, setDraft] = useState<Settings>({ ...data.settings }),
+  const [tool, setTool] = useState<"overview" | "plan" | "food">(
+      scenarioOnly ? "plan" : "overview",
+    ),
+    [draft, setDraft] = useState<Settings>({ ...data.settings }),
     [error, setError] = useState(""),
     [foodCost, setFoodCost] = useState(String(data.settings.foodCost / 100)),
     [visits, setVisits] = useState(String(data.settings.foodVisits)),
@@ -54,10 +60,24 @@ export function Budget({
             ? Math.min(99_999_999_999, Math.max(0, Number(value) || 0))
             : value,
     }));
-  const allocations = main ? splitPool(preview, p.savings) : [];
+  const allocations = main
+    ? splitPool(preview, p.savings).sort(
+        (a, b) => Number(b.goalId === main.id) - Number(a.goalId === main.id),
+      )
+    : [];
   function apply() {
     if (commit({ ...data, settings: draft }, "Savings plan applied"))
       setError("");
+    else setError("Could not save. Reopen Budget and try again.");
+  }
+  function go(next: typeof tool) {
+    setDraft({ ...data.settings });
+    setFoodCost(String(data.settings.foodCost / 100));
+    setVisits(String(data.settings.foodVisits));
+    setReduced(0);
+    setError("");
+    setTool(next);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
   function preset(name: string) {
     if (name === "save") setDraft((s) => ({ ...s, expenses: 0, savings: 40 }));
@@ -88,205 +108,206 @@ export function Budget({
     v !== data.settings.foodVisits;
   return (
     <>
-      <PageTitle title={scenarioOnly ? "What if I saved more?" : "Budget"} />
-      <div className="budget-total">
-        {money(p.income, currency, true)}
-        <span> / paycheque</span>
-      </div>
-      <div
-        className="allocation-bar"
-        role="img"
-        aria-label="Paycheque allocation"
-      >
-        {[
-          ["giving", p.giving],
-          ["savings", p.savings],
-          ["spending", p.spending],
-          ["expenses", p.expenses],
-        ].map(([name, amount]) => (
-          <span
-            key={name}
-            className={`allocation-${name}`}
-            style={{
-              width: `${p.income ? Math.max(0, (Number(amount) / p.income) * 100) : 0}%`,
-            }}
-          />
-        ))}
-      </div>
-      <div className="detail-list budget-breakdown">
-        {[
-          ["Tithing", p.giving],
-          ["Savings", p.savings],
-          ["Spending", p.spending],
-          ["Expenses", p.expenses],
-        ].map(([label, amount]) => (
-          <div key={label}>
-            <span>
-              <i
-                className={`swatch allocation-${String(label).toLowerCase()}`}
-              />
-              {label}
-            </span>
-            <small>
-              {percent(p.income ? (Number(amount) / p.income) * 100 : 0)} of pay
-            </small>
-            <strong>{money(Number(amount), currency, true)}</strong>
+      <PageTitle
+        title={
+          tool === "overview"
+            ? "Budget"
+            : tool === "food"
+              ? "Fast food"
+              : "Savings preview"
+        }
+        onBack={
+          !scenarioOnly && tool !== "overview"
+            ? () => go("overview")
+            : undefined
+        }
+      />
+      {tool === "overview" ? (
+        <>
+          <div className="budget-total">
+            {money(p.income, currency, true)}
+            <span> / payday</span>
           </div>
-        ))}
-      </div>
-      <Section title="Make room for savings">
-        <div className="form-grid">
-          <Field
-            label="Total savings (%)"
-            hint={`Main goal and Side Quests together. Applies to ${money(p.available, currency)} after tithing and expenses.`}
-          >
-            <PercentInput
-              label="Savings percentage"
-              value={draft.savings}
-              onChange={(value) => update("savings", value)}
+          <div className="detail-list budget-breakdown simple-breakdown">
+            <div>
+              <span>Tithing</span>
+              <strong>{money(p.giving, currency)}</strong>
+            </div>
+            {allocations.length ? (
+              allocations.map((entry) => (
+                <div key={entry.goalId}>
+                  <span>
+                    {data.goals.find((g) => g.id === entry.goalId)?.name}
+                  </span>
+                  <strong>{money(entry.amount, currency)}</strong>
+                </div>
+              ))
+            ) : (
+              <div>
+                <span>Savings</span>
+                <strong>{money(p.savings, currency)}</strong>
+              </div>
+            )}
+            <div>
+              <span>Spending</span>
+              <strong>{money(p.spending, currency)}</strong>
+            </div>
+            {p.expenses > 0 ? (
+              <div>
+                <span>Expenses</span>
+                <strong>{money(p.expenses, currency)}</strong>
+              </div>
+            ) : null}
+          </div>
+          <Button onClick={onEditSplit}>Change split</Button>
+          <div className="budget-tools">
+            <MenuRow
+              icon={<TrendingUp size={21} />}
+              label="Savings preview"
+              detail="Try a different plan"
+              onClick={() => go("plan")}
             />
-          </Field>
-          <Field
-            label="Spending (%)"
-            hint="The rest of the money after tithing and expenses."
-          >
-            <PercentInput
-              label="Spending percentage"
-              value={100 - draft.savings}
-              onChange={(value) => update("savings", 100 - value)}
+            <MenuRow
+              icon={<Utensils size={21} />}
+              label="Fast food"
+              detail="See what you could save"
+              onClick={() => go("food")}
             />
-          </Field>
-        </div>
-        <p className="fine-print">
-          For separate main-goal and Side Quest percentages, open Settings →
-          Your income split.
-        </p>
-        {!scenarioOnly ? (
+          </div>
+        </>
+      ) : tool === "plan" ? (
+        <>
+          <p className="section-description">
+            {money(p.available, currency)} after tithing
+            {p.expenses > 0 ? " & expenses" : ""}
+          </p>
           <div className="form-grid">
-            <Field label="Tithing (% of paycheque)">
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={draft.giving}
-                onChange={(e) => update("giving", Number(e.target.value))}
+            <Field label="To goals (%)">
+              <PercentInput
+                label="Savings percentage"
+                value={draft.savings}
+                onChange={(value) => update("savings", value)}
               />
             </Field>
-            <Field label="Expenses per payday">
-              <AmountInput
-                value={String(draft.expenses / 100)}
-                onChange={(value) =>
-                  update(
-                    "expenses",
-                    Math.round(Math.max(0, Number(value) || 0) * 100),
-                  )
-                }
-                label="Expenses per payday"
+            <Field label="Spending (%)">
+              <PercentInput
+                label="Spending percentage"
+                value={100 - draft.savings}
+                onChange={(value) => update("savings", 100 - value)}
               />
             </Field>
           </div>
-        ) : null}
-        {!p.valid ? (
-          <FormError error="Expenses exceed income after tithing. Reduce expenses or update income." />
-        ) : null}
-        <Field label="Funding mode">
-          <select
-            value={draft.mode}
-            onChange={(e) => update("mode", e.target.value)}
-          >
-            <option value="focus">Focus — all savings to my main goal</option>
-            <option value="balanced">
-              Balanced — fund my Side Quests, too
-            </option>
-          </select>
-        </Field>
-        {allocations.length ? (
           <div className="detail-list allocations">
-            {allocations.map((e) => (
-              <div key={e.goalId}>
-                <span>{data.goals.find((g) => g.id === e.goalId)?.name}</span>
-                <strong>{money(e.amount, currency)}</strong>
+            {allocations.map((entry) => (
+              <div key={entry.goalId}>
+                <span>
+                  {data.goals.find((g) => g.id === entry.goalId)?.name}
+                </span>
+                <strong>{money(entry.amount, currency)}</strong>
               </div>
             ))}
           </div>
-        ) : null}
-        <p className="fine-print">
-          One savings pool. Completed and paused Side Quests return their future
-          share to your main goal.
-        </p>
-        {!scenarioOnly ? (
-          <details className="preset-options">
-            <summary>Budget starting points</summary>
-            <div className="preset-row">
-              <button onClick={() => preset("save")}>Save First</button>
-              <button onClick={() => preset("50")}>50 / 30 / 20</button>
-              <button onClick={() => preset("70")}>70 / 20 / 10</button>
-            </div>
-            <p className="fine-print">
-              These are editable starting points. 50/30/20 splits money after
-              tithing into expenses, spending, and savings. 70/20/10 uses 10%
-              tithing, approximately 20% savings, and the rest spending. Your
-              current plan is always customizable.
-            </p>
+          <details className="compact-options budget-options">
+            <summary>More options</summary>
+            <Field label="Fund">
+              <select
+                value={draft.mode}
+                onChange={(e) => update("mode", e.target.value)}
+              >
+                <option value="focus">Main goal only</option>
+                <option value="balanced">Main + Side Quests</option>
+              </select>
+            </Field>
+            {!scenarioOnly ? (
+              <>
+                <div className="form-grid">
+                  <Field label="Tithing (% of pay)">
+                    <PercentInput
+                      label="Tithing percentage"
+                      value={draft.giving}
+                      onChange={(value) => update("giving", value)}
+                    />
+                  </Field>
+                  <Field label="Expenses per payday">
+                    <AmountInput
+                      value={String(draft.expenses / 100)}
+                      onChange={(value) =>
+                        update(
+                          "expenses",
+                          Math.round(Math.max(0, Number(value) || 0) * 100),
+                        )
+                      }
+                      label="Expenses per payday"
+                    />
+                  </Field>
+                </div>
+                <p className="fine-print">Starting points</p>
+                <div className="preset-row">
+                  <button onClick={() => preset("save")}>Save First</button>
+                  <button onClick={() => preset("50")}>50 / 30 / 20</button>
+                  <button onClick={() => preset("70")}>70 / 20 / 10</button>
+                </div>
+                <p className="fine-print">
+                  50/30/20: after tithing. 70/20/10: 10% tithing, about 20%
+                  savings.
+                </p>
+              </>
+            ) : null}
           </details>
-        ) : null}
-      </Section>
-      <Section title="Projection preview">
-        {main ? (
-          <>
-            <ForecastRow
-              left={remaining(main, b[main.id])}
-              forecast={fc[main.id]}
-              currency={currency}
-            />
-            <div className="detail-list">
-              {data.goals
-                .filter(
-                  (g) =>
-                    g.type === "side" && g.status === "active" && !g.deleted,
-                )
-                .map((g) => (
-                  <div key={g.id}>
-                    <span>{g.name}</span>
-                    <strong>
-                      {fc[g.id]?.date
-                        ? shortDate(fc[g.id].date, true)
-                        : fc[g.id]?.count === 0
-                          ? "Reached"
-                          : "Not funded"}
-                    </strong>
-                  </div>
-                ))}
-            </div>
-          </>
-        ) : (
-          <p className="muted">
-            Create a main goal to see your projected completion date.
-          </p>
-        )}
-        <p className="fine-print">
-          Apply to update future contributions. Existing balances stay the same.
-        </p>
-        <FormError error={error} />
-        <div className="button-stack">
-          <Button disabled={!changed || !p.valid} onClick={apply}>
-            Apply plan
-          </Button>
-          {changed ? (
-            <button
-              className="text-link"
-              onClick={() => setDraft({ ...data.settings })}
-            >
-              Discard preview
-            </button>
-          ) : null}
-        </div>
-      </Section>
-      {!scenarioOnly ? (
-        <Section title="Fast-food spending">
+          <Section title="Projected finish">
+            {main ? (
+              <>
+                <ForecastRow
+                  left={remaining(main, b[main.id])}
+                  forecast={fc[main.id]}
+                  currency={currency}
+                />
+                <div className="detail-list">
+                  {data.goals
+                    .filter(
+                      (g) =>
+                        g.type === "side" &&
+                        g.status === "active" &&
+                        !g.deleted,
+                    )
+                    .map((g) => (
+                      <div key={g.id}>
+                        <span>{g.name}</span>
+                        <strong>
+                          {fc[g.id]?.date
+                            ? shortDate(fc[g.id].date, true)
+                            : fc[g.id]?.count === 0
+                              ? "Reached"
+                              : "Not funded"}
+                        </strong>
+                      </div>
+                    ))}
+                </div>
+              </>
+            ) : (
+              <p className="muted">Add a main goal first.</p>
+            )}
+            {!p.valid ? (
+              <FormError error="Expenses exceed pay after tithing." />
+            ) : null}
+            <FormError error={error} />
+            <Button disabled={!changed || !p.valid} onClick={apply}>
+              Apply plan
+            </Button>
+            {changed ? (
+              <button
+                className="text-link spaced"
+                onClick={() => setDraft({ ...data.settings })}
+              >
+                Discard preview
+              </button>
+            ) : null}
+          </Section>
+        </>
+      ) : (
+        <>
           <div className="form-grid">
-            <Field label="Average visit">
+            <Field label="Cost per visit">
               <AmountInput
                 value={foodCost}
                 onChange={setFoodCost}
@@ -302,23 +323,26 @@ export function Budget({
                 max="100"
                 step="0.5"
                 value={visits}
-                onChange={(e) => setVisits(e.target.value)}
+                onFocus={(e) => {
+                  if (e.currentTarget.value === "0") e.currentTarget.select();
+                }}
+                onChange={(e) =>
+                  setVisits(e.target.value.replace(/^0+(?=\d)/, ""))
+                }
               />
             </Field>
           </div>
           <div className="insight-numbers">
             <div>
               <strong>{money(food.monthly, currency, true)}</strong>
-              <span>per month, on average</span>
+              <span>per month</span>
             </div>
             <div>
               <strong>{money(food.yearly, currency, true)}</strong>
               <span>per year</span>
             </div>
           </div>
-          <Field
-            label={`What if you skipped ${Math.min(reduced, v)} visits a week?`}
-          >
+          <Field label={`Skip ${Math.min(reduced, v)} visits a week`}>
             <input
               type="range"
               min="0"
@@ -330,7 +354,7 @@ export function Budget({
             />
           </Field>
           <p className="insight-copy">
-            That could free up{" "}
+            Save{" "}
             <strong>
               {money((savedWeekly * 52) / 12, currency, true)} a month
             </strong>
@@ -338,38 +362,38 @@ export function Budget({
             {main && extra > 0 && withFood[main.id]?.date ? (
               <>
                 {" "}
-                Redirecting it into your current savings split could bring your
-                goal to{" "}
+                Your goal could be ready{" "}
                 <strong>{shortDate(withFood[main.id].date, true)}</strong>.
               </>
             ) : null}
           </p>
           <p className="fine-print">
-            Planning estimate only; this doesn’t log an expense. Monthly cost
-            uses 52 weeks ÷ 12. Any extra savings must fit your spending
-            allowance.
+            Estimate only. Redirect savings from your spending money.
           </p>
+          <FormError error={error} />
           <Button
-            secondary
             disabled={!foodChanged}
-            onClick={() =>
-              commit(
-                {
-                  ...data,
-                  settings: {
-                    ...data.settings,
-                    foodCost: Math.round(cost * 100),
-                    foodVisits: v,
+            onClick={() => {
+              if (
+                !commit(
+                  {
+                    ...data,
+                    settings: {
+                      ...data.settings,
+                      foodCost: Math.round(cost * 100),
+                      foodVisits: v,
+                    },
                   },
-                },
-                "Spending estimate saved",
+                  "Estimate saved",
+                )
               )
-            }
+                setError("Could not save. Try again.");
+            }}
           >
-            Save spending estimate
+            Save estimate
           </Button>
-        </Section>
-      ) : null}
+        </>
+      )}
     </>
   );
 }

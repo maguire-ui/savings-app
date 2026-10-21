@@ -30,7 +30,7 @@ import { UndoMoney } from "./components/UndoMoney";
 import { IncomeForm } from "./components/IncomeForm";
 import { Home, Activity } from "./components/Home";
 import { Budget } from "./components/Budget";
-import { SettingsPage } from "./components/Settings";
+import { SettingsPage, type SettingsView } from "./components/Settings";
 import {
   PageTitle,
   Section,
@@ -48,6 +48,7 @@ export default function App() {
   const [data, setData] = useState<Data>(loaded.data),
     [recovery, setRecovery] = useState(loaded.error),
     [page, setPage] = useState("home"),
+    [settingsView, setSettingsView] = useState<SettingsView>("menu"),
     [selected, setSelected] = useState<string | null>(null),
     [sheet, setSheet] = useState<
       "goal" | "transaction" | "income" | "install" | null
@@ -134,9 +135,14 @@ export default function App() {
     }
   }
   function navigate(next: string) {
+    if (next === "settings") setSettingsView("menu");
     setPage(next);
     setSelected(null);
     window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function openSplit() {
+    navigate("settings");
+    setSettingsView("split");
   }
   function newGoal(type: "main" | "side") {
     setGoalType(type);
@@ -300,7 +306,7 @@ export default function App() {
             Offline · changes stay on this device
           </div>
         ) : null}
-        {needRefresh ? (
+        {needRefresh && page !== "settings" ? (
           <div className="update-banner">
             <span>
               {updateBlocked
@@ -356,14 +362,11 @@ export default function App() {
                   <div className="quest-mode">
                     <span>
                       {data.settings.mode === "focus"
-                        ? "Focus Mode"
-                        : "Balanced Mode"}
+                        ? "Main goal only"
+                        : "Shared savings"}
                     </span>
-                    <button
-                      className="text-link"
-                      onClick={() => navigate("budget")}
-                    >
-                      Adjust funding
+                    <button className="text-link" onClick={openSplit}>
+                      Money split
                     </button>
                   </div>
                   {(["active", "wishlist", "paused", "completed"] as const).map(
@@ -580,12 +583,19 @@ export default function App() {
             </>
           ) : null}
           {page === "budget" ? (
-            <Budget key={data.revision} data={data} commit={commit} />
+            <Budget
+              key={data.revision}
+              data={data}
+              commit={commit}
+              onEditSplit={openSplit}
+            />
           ) : null}
           {page === "settings" ? (
             <SettingsPage
               data={data}
               commit={commit}
+              view={settingsView}
+              onViewChange={setSettingsView}
               offlineReady={offlineReady}
               online={online}
               install={() => setSheet("install")}
@@ -631,21 +641,17 @@ export default function App() {
         />
       ) : null}
       {sheet === "install" ? (
-        <Modal title="Make yourself at home" onClose={() => setSheet(null)}>
+        <Modal title="Add to Home Screen" onClose={() => setSheet(null)}>
           <p>Open this website in Safari on your iPhone.</p>
           <ol className="install-steps">
-            <li>Tap the Share button.</li>
-            <li>Choose Add to Home Screen.</li>
+            <li>Tap Share → Add to Home Screen.</li>
             <li>Keep “Open as Web App” enabled and tap Add.</li>
             <li>
-              Open Savings from its icon while online once. In Settings, check
-              “Ready to use offline.”
+              Open once online. Check Settings → App updates → Offline ready.
             </li>
           </ol>
           <p className="fine-print">
-            After that, the downloaded app works without an internet connection.
-            No Xcode signing or weekly reinstall. Keep an exported backup of
-            your data.
+            Keep this icon for updates. Export a backup before reinstalling.
           </p>
           <Button onClick={() => setSheet(null)}>Got it</Button>
         </Modal>
@@ -653,7 +659,17 @@ export default function App() {
       {tx ? (
         <Modal title="Activity details" onClose={() => setTx(null)}>
           <p className="muted">
-            {shortDate(tx.date, true)} · {tx.kind}
+            {shortDate(tx.date, true)} ·{" "}
+            {
+              {
+                income: "Income",
+                payday: "Payday",
+                deposit: "Savings",
+                withdrawal: "Withdrawal",
+                purchase: "Purchase",
+                opening: "Starting balance",
+              }[tx.kind]
+            }
             {tx.voided ? " · Undone" : ""}
           </p>
           <h3>{tx.note || "Savings activity"}</h3>
@@ -674,9 +690,11 @@ export default function App() {
           {tx.kind === "payday" || tx.kind === "income" ? (
             <p className="fine-print">
               Income: {money(tx.gross || 0, data.settings.currency)} · Tithing:{" "}
-              {money(tx.giving || 0, data.settings.currency)} · Expenses:{" "}
-              {money(tx.expenses || 0, data.settings.currency)} · Fun money:{" "}
-              {money(tx.spending || 0, data.settings.currency)}
+              {money(tx.giving || 0, data.settings.currency)}
+              {tx.expenses ? (
+                <> · Expenses: {money(tx.expenses, data.settings.currency)}</>
+              ) : null}{" "}
+              · Spending: {money(tx.spending || 0, data.settings.currency)}
             </p>
           ) : null}
           <p className="fine-print">

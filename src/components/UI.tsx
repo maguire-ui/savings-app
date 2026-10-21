@@ -1,6 +1,7 @@
 import {
   useEffect,
   useRef,
+  useId,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -16,6 +17,7 @@ import {
   Gift,
   ShoppingBag,
   Headphones,
+  ChevronRight,
 } from "lucide-react";
 import { money, percent, shortDate, type Forecast, type Goal } from "../model";
 export const icons = {
@@ -53,6 +55,35 @@ export function Button({
       disabled={disabled}
     >
       {children}
+    </button>
+  );
+}
+export function MenuRow({
+  icon,
+  label,
+  detail,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  detail?: string;
+  onClick: () => void;
+}) {
+  const detailId = useId();
+  return (
+    <button
+      className="menu-row"
+      type="button"
+      aria-label={label}
+      aria-describedby={detail ? detailId : undefined}
+      onClick={onClick}
+    >
+      <span className="menu-row-icon">{icon}</span>
+      <span className="menu-row-label">
+        <strong>{label}</strong>
+        {detail ? <small id={detailId}>{detail}</small> : null}
+      </span>
+      <ChevronRight size={18} aria-hidden="true" />
     </button>
   );
 }

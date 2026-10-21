@@ -13,6 +13,7 @@ import {
   money,
   validate,
   completeQuests,
+  budget,
 } from "../model";
 import { Modal, Button, Field, AmountInput, icons } from "./UI";
 export type Commit = (d: Data, message?: string) => boolean;
@@ -142,15 +143,12 @@ export function GoalForm({
         </div>
         {type === "side" ? (
           <>
-            <Field
-              label="Funding"
-              hint="Fund now switches to Balanced Mode. Wishlist items receive no automatic funding."
-            >
+            <Field label="Funding">
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as GoalStatus)}
               >
-                <option value="wishlist">Wishlist — save it for later</option>
+                <option value="wishlist">Wishlist</option>
                 <option value="active">Fund now</option>
                 <option value="paused">Paused</option>
                 {goal ? <option value="completed">Completed</option> : null}
@@ -161,8 +159,8 @@ export function GoalForm({
             </Field>
             {status === "active" ? (
               <Field
-                label="Share of the savings pool (%)"
-                hint="The remainder goes to your main goal. All active Side Quests together must be 100% or less."
+                label="Share of goal savings (%)"
+                hint={`Of ${money(budget(data.settings).savings, data.settings.currency)} per payday.`}
               >
                 <input
                   aria-label="Share of the savings pool (%)"
@@ -183,49 +181,56 @@ export function GoalForm({
                 />
               </Field>
             ) : null}
-            <div className="form-grid">
-              <Field label="Priority">
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(Number(e.target.value))}
-                >
-                  <option value="1">High</option>
-                  <option value="2">Normal</option>
-                  <option value="3">Low</option>
-                </select>
-              </Field>
-              <Field label="Icon">
-                <select value={icon} onChange={(e) => setIcon(e.target.value)}>
-                  {Object.keys(icons).map((i) => (
-                    <option key={i} value={i}>
-                      {
-                        {
-                          target: "Goal",
-                          game: "Gaming",
-                          travel: "Travel",
-                          gift: "Gift",
-                          shopping: "Shopping",
-                          audio: "Audio",
-                        }[i]
-                      }
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
           </>
         ) : null}
-        <Field
-          label="Target date (optional)"
-          hint="A personal deadline; it does not change your funding plan."
-        >
-          <input
-            type="date"
-            value={targetDate}
-            onInput={(e) => setTargetDate(e.currentTarget.value)}
-            onChange={(e) => setTargetDate(e.target.value)}
-          />
-        </Field>
+        <details className="compact-options">
+          <summary>More options</summary>
+          {type === "side" ? (
+            <>
+              <div className="form-grid">
+                <Field label="Priority">
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(Number(e.target.value))}
+                  >
+                    <option value="1">High</option>
+                    <option value="2">Normal</option>
+                    <option value="3">Low</option>
+                  </select>
+                </Field>
+                <Field label="Icon">
+                  <select
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                  >
+                    {Object.keys(icons).map((i) => (
+                      <option key={i} value={i}>
+                        {
+                          {
+                            target: "Goal",
+                            game: "Gaming",
+                            travel: "Travel",
+                            gift: "Gift",
+                            shopping: "Shopping",
+                            audio: "Audio",
+                          }[i]
+                        }
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </>
+          ) : null}
+          <Field label="Target date">
+            <input
+              type="date"
+              value={targetDate}
+              onInput={(e) => setTargetDate(e.currentTarget.value)}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </Field>
+        </details>
         <FormError error={error} />
         <Button type="submit">{goal ? "Save changes" : "Create goal"}</Button>
       </form>
@@ -338,8 +343,12 @@ export function TransactionForm({
           />
         </Field>
         <p className="fine-print">
-          Use this for savings not already recorded through income. It does not
-          transfer funds or make a purchase.
+          {kind === "deposit"
+            ? "Extra savings for this goal."
+            : kind === "purchase"
+              ? "Spending from this goal."
+              : "Remove savings from this goal."}{" "}
+          Tracking only.
         </p>
         <FormError error={error} />
         <Button type="submit">
@@ -372,7 +381,7 @@ export function Confirm({
       <div className="button-stack">
         <Button onClick={onConfirm}>{action}</Button>
         <Button secondary onClick={onClose}>
-          Keep it as it is
+          Cancel
         </Button>
       </div>
     </Modal>
