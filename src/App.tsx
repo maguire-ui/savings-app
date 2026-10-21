@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Toast, type ToastNotice } from "./components/Toast";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Home as HomeIcon,
   Flag,
@@ -63,8 +64,15 @@ export default function App() {
       action: string;
       run: () => void;
     } | null>(null),
-    [toast, setToast] = useState(""),
+    [toast, setToast] = useState<ToastNotice | null>(null),
     [online, setOnline] = useState(navigator.onLine);
+  const toastSequence = useRef(0);
+  const dismissToast = useCallback((id: number) => {
+    setToast((current) => (current?.id === id ? null : current));
+  }, []);
+  function notify(message: string) {
+    setToast({ id: ++toastSequence.current, message });
+  }
   const updates = useAppUpdates();
   const { offlineReady, needRefresh } = updates;
   const updateBlocked = Boolean(
@@ -89,7 +97,7 @@ export default function App() {
         if (fresh.error) setRecovery(fresh.error);
         else {
           setData(fresh.data);
-          setToast("Updated from another tab.");
+          notify("Updated from another tab.");
         }
       }
     };
@@ -100,11 +108,6 @@ export default function App() {
       removeEventListener("storage", storage);
     };
   }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
   useEffect(() => {
     document.documentElement.dataset.appearance = data.settings.appearance;
     const media = matchMedia("(prefers-color-scheme: dark)");
@@ -124,10 +127,10 @@ export default function App() {
     try {
       const stored = save(next, data.revision);
       setData(stored);
-      setToast(message);
+      notify(message);
       return true;
     } catch (err) {
-      setToast(
+      notify(
         (err as Error).message ||
           "Storage is full. Export a backup before making more changes.",
       );
@@ -183,7 +186,7 @@ export default function App() {
   }
   function deleteGoal(g: Goal) {
     if (b[g.id]) {
-      setToast(
+      notify(
         "Remove or reassign the balance before deleting. You can archive it with its balance intact.",
       );
       return;
@@ -237,7 +240,7 @@ export default function App() {
                 setData(previous);
                 setRecovery("");
               } catch (e) {
-                setToast((e as Error).message);
+                notify((e as Error).message);
               }
             }}
           >
@@ -263,13 +266,13 @@ export default function App() {
                   setData(recovered);
                   setRecovery("");
                 } catch (err) {
-                  setToast((err as Error).message);
+                  notify((err as Error).message);
                 }
               }}
             />
           </label>
         </div>
-        {toast ? <p role="alert">{toast}</p> : null}
+        <Toast notice={toast} onDismiss={dismissToast} role="alert" />
       </main>
     );
   return (
@@ -505,7 +508,7 @@ export default function App() {
                 <Button
                   onClick={() => {
                     if (goal.type === "main" && main) {
-                      setToast(
+                      notify(
                         "Archive your current main goal before restoring another.",
                       );
                       return;
@@ -611,11 +614,7 @@ export default function App() {
           ) : null}
         </main>
       </div>
-      {toast ? (
-        <div role="status" className="toast" onClick={() => setToast("")}>
-          {toast}
-        </div>
-      ) : null}
+      <Toast notice={toast} onDismiss={dismissToast} />
       {sheet === "goal" ? (
         <GoalForm
           data={data}

@@ -1065,6 +1065,7 @@ input::placeholder {
   min-height: 36px;
 }
 .toast {
+  will-change: transform, opacity;
   position: fixed;
   z-index: 60;
   left: 50%;
