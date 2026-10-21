@@ -1,3 +1,4 @@
+import { Input } from "./Input";
 import { useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, Wallet } from "lucide-react";
 import {
@@ -135,7 +136,7 @@ export function IncomeForm({
             />
           </Field>
           <Field label="Note (optional)">
-            <input
+            <Input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={200}
@@ -268,7 +269,7 @@ export function IncomeForm({
             ) : null}
             <div className="income-share-list">
               <Field label="Main goal (%)">
-                <input
+                <Input
                   type="number"
                   min="0"
                   max="100"
@@ -279,7 +280,7 @@ export function IncomeForm({
               </Field>
               {quests.map((g) => (
                 <Field key={g.id} label={`${g.name} (%)`}>
-                  <input
+                  <Input
                     type="number"
                     min="0"
                     max="100"
@@ -302,7 +303,7 @@ export function IncomeForm({
                 </Field>
               ))}
               <Field label="Spending (%)">
-                <input
+                <Input
                   type="number"
                   min="0"
                   max="100"

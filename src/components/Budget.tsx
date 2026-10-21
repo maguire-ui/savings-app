@@ -1,3 +1,4 @@
+import { Input } from "./Input";
 import { useState } from "react";
 import { TrendingUp, Utensils } from "lucide-react";
 import {
@@ -316,16 +317,13 @@ export function Budget({
               />
             </Field>
             <Field label="Visits per week">
-              <input
+              <Input
                 type="number"
                 inputMode="decimal"
                 min="0"
                 max="100"
                 step="0.5"
                 value={visits}
-                onFocus={(e) => {
-                  if (e.currentTarget.value === "0") e.currentTarget.select();
-                }}
                 onChange={(e) =>
                   setVisits(e.target.value.replace(/^0+(?=\d)/, ""))
                 }

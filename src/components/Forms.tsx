@@ -1,3 +1,4 @@
+import { Input } from "./Input";
 import { useState, type FormEvent } from "react";
 import { AlertCircle } from "lucide-react";
 import {
@@ -109,7 +110,7 @@ export function GoalForm({
     >
       <form onSubmit={submit}>
         <Field label="Name">
-          <input
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
@@ -162,16 +163,13 @@ export function GoalForm({
                 label="Share of goal savings (%)"
                 hint={`Of ${money(budget(data.settings).savings, data.settings.currency)} per payday.`}
               >
-                <input
+                <Input
                   aria-label="Share of the savings pool (%)"
                   type="number"
                   min="0"
                   max="100"
                   step="any"
                   value={allocation}
-                  onFocus={(e) => {
-                    if (e.currentTarget.value === "0") e.currentTarget.select();
-                  }}
                   onChange={(e) =>
                     setAllocation(e.target.value.replace(/^0+(?=\d)/, ""))
                   }
@@ -335,7 +333,7 @@ export function TransactionForm({
           />
         </Field>
         <Field label="Note (optional)">
-          <input
+          <Input
             value={note}
             maxLength={200}
             onChange={(e) => setNote(e.target.value)}

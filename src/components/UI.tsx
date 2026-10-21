@@ -1,3 +1,4 @@
+import { Input } from "./Input";
 import {
   useEffect,
   useRef,
@@ -331,7 +332,7 @@ export function AmountInput({
   min?: string;
 }) {
   return (
-    <input
+    <Input
       aria-label={label}
       inputMode="decimal"
       type="number"
@@ -339,7 +340,7 @@ export function AmountInput({
       max="999999999.99"
       step="0.01"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value.replace(/^0+(?=\d)/, ""))}
       required={required}
     />
   );
@@ -362,7 +363,7 @@ export function PercentInput({
     );
   }, [value]);
   return (
-    <input
+    <Input
       aria-label={label}
       type="number"
       inputMode="decimal"
@@ -370,9 +371,6 @@ export function PercentInput({
       max="100"
       step="any"
       value={text}
-      onFocus={(e) => {
-        if (e.currentTarget.value === "0") e.currentTarget.select();
-      }}
       onChange={(e) => {
         const next = e.target.value.replace(/^0+(?=\d)/, "");
         const bounded = Math.max(0, Math.min(100, Number(next)));

@@ -1,3 +1,4 @@
+import { Input } from "./Input";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Download,
@@ -366,7 +367,7 @@ export function SettingsPage({
           {draft.frequency === "semimonthly" ? (
             <div className="form-grid">
               <Field label="First day (1–27)">
-                <input
+                <Input
                   type="number"
                   min="1"
                   max="27"
@@ -375,7 +376,7 @@ export function SettingsPage({
                 />
               </Field>
               <Field label="Second day (2–31)">
-                <input
+                <Input
                   type="number"
                   min="2"
                   max="31"
@@ -387,7 +388,7 @@ export function SettingsPage({
           ) : null}
           {draft.frequency === "monthly" ? (
             <Field label="Payday (1–31)" hint="Short months use the last day.">
-              <input
+              <Input
                 type="number"
                 min="1"
                 max="31"
