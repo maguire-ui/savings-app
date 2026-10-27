@@ -1,3 +1,4 @@
+import { TithingVault } from "./components/TithingVault";
 import { Toast, type ToastNotice } from "./components/Toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -52,7 +53,7 @@ export default function App() {
     [settingsView, setSettingsView] = useState<SettingsView>("menu"),
     [selected, setSelected] = useState<string | null>(null),
     [sheet, setSheet] = useState<
-      "goal" | "transaction" | "income" | "install" | null
+      "goal" | "transaction" | "income" | "install" | "vault" | null
     >(null),
     [editing, setEditing] = useState<Goal | undefined>(),
     [goalType, setGoalType] = useState<"main" | "side">("main"),
@@ -332,6 +333,7 @@ export default function App() {
           {page === "home" ? (
             <Home
               data={data}
+              vault={() => setSheet("vault")}
               openGoal={openGoal}
               newMain={() => newGoal("main")}
               add={() => {
@@ -638,6 +640,9 @@ export default function App() {
           commit={commit}
           onClose={() => setSheet(null)}
         />
+      ) : null}
+      {sheet === "vault" ? (
+        <TithingVault data={data} commit={commit} onClose={() => setSheet(null)} />
       ) : null}
       {sheet === "install" ? (
         <Modal title="Add to Home Screen" onClose={() => setSheet(null)}>

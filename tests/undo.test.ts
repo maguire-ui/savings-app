@@ -157,6 +157,7 @@ test("undo preserves later goal edits and unrelated financial preferences", () =
   const d = setup();
   d.settings.mode = "focus";
   let n = recordIncome(d, 20000, {
+    day: d.settings.nextPayday,
     rememberSplit: true,
     scheduledPayday: true,
     split: { main: 60, quests: { side: 30, second: 0 }, fun: 10 },

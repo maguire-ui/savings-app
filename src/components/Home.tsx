@@ -16,6 +16,7 @@ import {
   money,
   shortDate,
   paydays,
+  tithingBalance,
 } from "../model";
 import {
   Ring,
@@ -103,6 +104,7 @@ export function Home({
   income,
   navigate,
   activity,
+  vault,
 }: {
   data: Data;
   openGoal: (g: Goal) => void;
@@ -111,6 +113,7 @@ export function Home({
   income: () => void;
   navigate: (s: string) => void;
   activity: (t: Transaction) => void;
+  vault: () => void;
 }) {
   const main = mainGoal(data),
     b = balances(data),
@@ -170,6 +173,12 @@ export function Home({
           )}
         </div>
         <div className="support-column">
+          <Section title="Tithing vault">
+            <button className="vault-summary" aria-label="Open tithing vault" onClick={vault}>
+              <span><strong>{money(tithingBalance(data), data.settings.currency, true)}</strong><small>Waiting to be paid</small></span>
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
+          </Section>
           <Section
             title="Next paycheque"
             action={

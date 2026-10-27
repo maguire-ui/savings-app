@@ -1830,3 +1830,19 @@ input[type="range"]::-moz-range-thumb {
   overflow-wrap: anywhere;
   text-align: right;
 }
+
+.vault-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 4px 0;
+  color: var(--text);
+  text-align: left;
+}
+.vault-summary > span { display: grid; gap: 5px; min-width: 0; }
+.vault-summary strong { font-size: 28px; font-weight: 650; letter-spacing: -0.8px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.vault-summary small { color: var(--muted); font-size: 13px; }
+.vault-summary > svg { color: var(--muted); flex: 0 0 auto; }
+.vault-balance { font-size: clamp(30px, 8vw, 44px); font-weight: 650; letter-spacing: -1.1px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }

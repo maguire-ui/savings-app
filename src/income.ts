@@ -177,6 +177,7 @@ export function recordIncome(
       entries: plan.entries,
       gross,
       giving: plan.tithing,
+      tithingVault: true,
       expenses: plan.expenses,
       spending: plan.fun,
     };

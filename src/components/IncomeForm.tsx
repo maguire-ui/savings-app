@@ -177,7 +177,7 @@ export function IncomeForm({
           <div className="income-deductions">
             <div>
               <span>
-                Tithing <small>{percent(data.settings.giving)} of income</small>
+                Tithing vault <small>{percent(data.settings.giving)} of income</small>
               </span>
               <strong>{money(deduction.giving, currency)}</strong>
             </div>

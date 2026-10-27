@@ -61,9 +61,17 @@ export interface Transaction {
   payday?: string;
   gross?: number;
   giving?: number;
+  tithingVault?: boolean;
   expenses?: number;
   spending?: number;
   undo?: MoneyUndo;
+}
+export interface TithingDeposit {
+  id: string;
+  date: string;
+  amount: number;
+  incomeIds: string[];
+  voided?: boolean;
 }
 export interface Data {
   version: 1;
@@ -71,6 +79,7 @@ export interface Data {
   settings: Settings;
   goals: Goal[];
   transactions: Transaction[];
+  tithingDeposits?: TithingDeposit[];
 }
 export const id = () => crypto.randomUUID();
 export function today() {
@@ -142,6 +151,40 @@ export function balances(d: Data) {
     if (!t.voided)
       for (const e of t.entries) b[e.goalId] = (b[e.goalId] || 0) + e.amount;
   return b;
+}
+// Only income recorded by the vault-aware app is enrolled. Old receipts may already be paid.
+function pendingTithing(d: Data) {
+  const paid = new Set(
+    (d.tithingDeposits || []).filter((p) => !p.voided).flatMap((p) => p.incomeIds),
+  );
+  return d.transactions.filter(
+    (t) => t.tithingVault && !t.voided && !paid.has(t.id) && (t.giving || 0) > 0,
+  );
+}
+export function tithingBalance(d: Data) {
+  return pendingTithing(d).reduce((sum, t) => sum + (t.giving || 0), 0);
+}
+export function depositTithing(d: Data): Data {
+  const pending = pendingTithing(d);
+  const amount = pending.reduce((sum, t) => sum + (t.giving || 0), 0);
+  if (!amount) throw Error("Your tithing vault is empty.");
+  return validate({
+    ...d,
+    tithingDeposits: [
+      ...(d.tithingDeposits || []),
+      { id: id(), date: today(), amount, incomeIds: pending.map((t) => t.id) },
+    ],
+  });
+}
+export function undoTithingDeposit(d: Data, depositId: string): Data {
+  const deposit = d.tithingDeposits?.find((p) => p.id === depositId);
+  if (!deposit || deposit.voided) throw Error("This deposit is no longer available.");
+  return validate({
+    ...d,
+    tithingDeposits: d.tithingDeposits!.map((p) =>
+      p.id === depositId ? { ...p, voided: true } : p,
+    ),
+  });
 }
 export function mainGoal(d: Data) {
   return d.goals.find(
@@ -428,6 +471,7 @@ export function recordPayday(
         date: day,
         createdAt: new Date().toISOString(),
         kind: "payday" as const,
+        tithingVault: true,
         note: "Payday savings",
         entries,
         payday: day,
@@ -722,6 +766,38 @@ export function validate(value: unknown): Data {
     }
     tids.add(t.id);
   }
+  for (const t of d.transactions) {
+    if (t.tithingVault !== undefined &&
+        (typeof t.tithingVault !== "boolean" || !["income", "payday"].includes(t.kind)))
+      throw Error("Invalid tithing record.");
+  }
+  if (d.tithingDeposits !== undefined) {
+    if (!Array.isArray(d.tithingDeposits) || d.tithingDeposits.length > 100000)
+      throw Error("Invalid tithing deposits.");
+    const paid = new Set<string>(), depositIds = new Set<string>();
+    const receipts = new Map(d.transactions.map((t) => [t.id, t]));
+    for (const p of d.tithingDeposits) {
+      if (!p || typeof p.id !== "string" || !p.id || p.id.length > 100 ||
+          depositIds.has(p.id) || !validDate(p.date) || !integer(p.amount) || p.amount <= 0 ||
+          (p.voided !== undefined && typeof p.voided !== "boolean") ||
+          !Array.isArray(p.incomeIds) || !p.incomeIds.length || p.incomeIds.length > d.transactions.length)
+        throw Error("Invalid tithing deposit.");
+      const included = new Set<string>();
+      let amount = 0;
+      for (const receiptId of p.incomeIds) {
+        const t = receipts.get(receiptId);
+        if (included.has(receiptId) || (!p.voided && paid.has(receiptId)) || !t?.tithingVault || !t.giving)
+          throw Error("Invalid tithing receipt.");
+        included.add(receiptId);
+        if (!p.voided) paid.add(receiptId);
+        amount += t.giving;
+      }
+      if (amount !== p.amount) throw Error("Unbalanced tithing deposit.");
+      depositIds.add(p.id);
+    }
+  }
+  if (!integer(tithingBalance(d)))
+    throw Error("Tithing vault exceeds the supported amount. Mark your paid tithing as deposited first.");
   if (Object.values(balances(d)).some((n) => !integer(n)))
     throw Error("The backup would create an invalid or negative balance.");
   return structuredClone(d);
